@@ -1,0 +1,1219 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>KPIダッシュ!街まわり営業 3D</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Zen+Kaku+Gothic+New:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#eef3f6; --grid:#dae3ea; --ink:#1d2a4a; --ink-soft:#56627c; --block-line:#8fa1b3;
+  --orange:#f09000; --orange-soft:#ffe2b0; --red:#d6413a; --green:#2f8f5b; --panel:#ffffff; --on-orange:#1d2a4a;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --paper:#131a29; --grid:#1d273b; --ink:#e7ecf5; --ink-soft:#9aa6bf; --block-line:#4a5c80;
+    --orange:#ffa31a; --orange-soft:#4a3410; --red:#ff6b61; --green:#5cc98a; --panel:#1a2336; --on-orange:#131a29;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#131a29; --grid:#1d273b; --ink:#e7ecf5; --ink-soft:#9aa6bf; --block-line:#4a5c80;
+  --orange:#ffa31a; --orange-soft:#4a3410; --red:#ff6b61; --green:#5cc98a; --panel:#1a2336; --on-orange:#131a29;
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:inherit}
+html,body{margin:0;background:var(--paper);color:var(--ink)}
+body{font-family:"Zen Kaku Gothic New","Hiragino Sans","Meiryo",system-ui,sans-serif;font-size:15px;line-height:1.55;-webkit-tap-highlight-color:transparent}
+.app{max-width:1320px;margin:0 auto;padding:10px;display:grid;gap:10px;grid-template-columns:minmax(0,1fr);grid-template-areas:"hud" "view" "side"}
+@media (min-width:900px){.app{grid-template-columns:minmax(0,1fr) 310px;grid-template-areas:"hud hud" "view side";padding:14px 16px}}
+.hud{grid-area:hud;display:flex;flex-wrap:wrap;align-items:center;gap:6px 18px;border-bottom:2px solid var(--ink);padding-bottom:8px}
+.hud h1{font-family:"DotGothic16",sans-serif;font-weight:400;font-size:1.3rem;margin:0;margin-right:auto}
+.clock{font-family:"DotGothic16",sans-serif;font-size:1.9rem;line-height:1}
+.chip{font-size:.88rem;color:var(--ink-soft)}
+.stam{display:flex;align-items:center;gap:6px;font-size:.85rem}
+.bar{position:relative;height:10px;border:2px solid var(--ink);border-radius:3px;background:var(--panel);overflow:hidden;display:block}
+.bar>i{position:absolute;inset:0 auto 0 0;background:var(--orange);transition:width .25s}
+.stam .bar{width:110px}
+.stam .bar.low>i{background:var(--red)}
+
+#view{grid-area:view;position:relative;min-width:0;height:62vh;min-height:360px;border:2px solid var(--ink);border-radius:8px;overflow:hidden;background:#9fc6e8;touch-action:none}
+@media (min-width:900px){#view{height:calc(100vh - 120px);min-height:460px}}
+#gl,#gl canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+#mini{position:absolute;top:10px;right:10px;width:200px;height:143px;border:2px solid #1d2a4a;border-radius:8px;background:#f4f1ec;box-shadow:3px 3px 0 #1d2a4a;cursor:zoom-in;transition:width .2s,height .2s}
+#mini.big{width:min(560px,80%);height:auto;aspect-ratio:28/20;cursor:zoom-out}
+.miniTag{position:absolute;top:14px;right:16px;font:400 .75rem "DotGothic16",sans-serif;color:#1d2a4a;background:rgba(255,255,255,.85);padding:0 5px;border-radius:3px;pointer-events:none}
+#banner{position:absolute;top:14px;left:50%;transform:translateX(-50%);font:400 1.15rem "DotGothic16",sans-serif;color:#fff;background:rgba(20,26,45,.72);padding:4px 16px;border-radius:4px;opacity:0;transition:opacity .4s;pointer-events:none;white-space:nowrap}
+#banner.show{opacity:1}
+#actBtn{position:absolute;left:50%;bottom:22px;transform:translateX(-50%);font-size:1rem;max-width:80%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#actBtn:active{transform:translate(calc(-50% + 3px),3px)}
+#joy{position:absolute;left:18px;bottom:18px;width:118px;height:118px;border-radius:50%;background:rgba(255,255,255,.28);border:2px solid rgba(29,42,74,.55);display:none;touch-action:none}
+#knob{position:absolute;left:50%;top:50%;width:50px;height:50px;margin:-25px 0 0 -25px;border-radius:50%;background:var(--orange);border:2px solid #1d2a4a}
+@media (max-width:600px){#mini{width:132px;height:94px}#mini.big{width:92%;height:auto}.miniTag{right:14px}}
+@media (pointer:coarse){#joy{display:block}#actBtn{left:auto;right:18px;transform:none}#actBtn:active{transform:translate(3px,3px)}}
+.zoom{position:absolute;right:10px;bottom:12px;display:flex;flex-direction:column;gap:6px}
+@media (pointer:coarse){.zoom{bottom:auto;top:170px}}
+.zoom .btn{width:38px;height:38px;padding:0;font-size:1.1rem}
+.keys{position:absolute;left:10px;bottom:8px;font-size:.78rem;color:#1d2a4a;background:rgba(255,255,255,.78);padding:2px 8px;border-radius:4px;pointer-events:none}
+@media (pointer:coarse){.keys{display:none}}
+.err{position:absolute;inset:0;display:grid;place-items:center;padding:20px;text-align:center;background:var(--panel);color:var(--ink)}
+
+.side{grid-area:side;display:flex;flex-direction:column;gap:12px;min-width:0}
+.box{border:2px solid var(--ink);border-radius:8px;background:var(--panel);padding:10px 12px}
+.box h2{font-family:"DotGothic16",sans-serif;font-weight:400;font-size:1rem;margin:0 0 6px;display:flex;justify-content:space-between;align-items:center}
+.kpi{display:grid;grid-template-columns:3.2em 1fr auto;align-items:center;gap:4px 8px;font-size:.9rem;margin:4px 0}
+.kpi .bar{height:12px}
+.kpi.done .bar>i{background:var(--green)}
+.kpi span:last-child{font-variant-numeric:tabular-nums;white-space:nowrap}
+.near{min-height:120px;font-size:.88rem}
+.near .nm{font-weight:900;font-size:1rem}
+.muted{color:var(--ink-soft)}
+.tag{display:inline-block;border:1.5px solid var(--ink);border-radius:3px;padding:0 5px;font-size:.78rem;margin:2px 4px 2px 0}
+.tag.idle{border-color:var(--green);color:var(--green)}
+.tag.peak,.tag.holiday,.tag.lost{border-color:var(--red);color:var(--red)}
+.log{list-style:none;margin:0;padding:0;font-size:.84rem;max-height:180px;overflow:auto}
+.log li{padding:3px 0;border-top:1px dashed var(--grid)}
+.log li:first-child{border-top:0}
+.log time{font-family:"DotGothic16",sans-serif;color:var(--ink-soft);margin-right:6px}
+.btn{font:inherit;font-weight:700;color:var(--ink);background:var(--panel);border:2px solid var(--ink);border-radius:6px;padding:8px 12px;box-shadow:3px 3px 0 var(--ink);cursor:pointer;transition:transform .05s,box-shadow .05s;user-select:none;-webkit-user-select:none;line-height:1.35}
+.btn:active{transform:translate(3px,3px);box-shadow:0 0 0 var(--ink)}
+.btn:focus-visible{outline:3px solid var(--orange);outline-offset:2px}
+.btn.pri{background:var(--orange);color:var(--on-orange)}
+.btn.sm{padding:3px 8px;font-size:.8rem;box-shadow:2px 2px 0 var(--ink)}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none;box-shadow:3px 3px 0 var(--ink)}
+.btn small{font-weight:400;display:block;font-size:.78rem}
+#view .btn{color:#1d2a4a;background:#fff;border-color:#1d2a4a;box-shadow:3px 3px 0 #1d2a4a}
+#view .btn.pri{background:#f09000}
+.overlay{position:fixed;inset:0;background:rgba(15,21,35,.6);display:flex;align-items:center;justify-content:center;padding:16px;padding-top:calc(16px + env(safe-area-inset-top,0px));padding-bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:20;overflow:auto}
+.overlay[hidden]{display:none}
+.card{width:100%;max-width:500px;background:var(--panel);border:2px solid var(--ink);border-radius:10px;box-shadow:7px 7px 0 var(--ink);padding:18px;max-height:100%;overflow:auto}
+.card.wide{max-width:780px}
+.card h3{font-family:"DotGothic16",sans-serif;font-weight:400;font-size:1.35rem;margin:0 0 2px;line-height:1.3}
+.card p{margin:.4em 0}
+.row{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
+.row .btn{flex:1 1 calc(50% - 10px)}
+.row .btn.full{flex-basis:100%}
+.shophead{display:flex;gap:12px;align-items:center}
+.shophead .ic{font-size:2.3rem;line-height:1;width:58px;height:58px;display:grid;place-items:center;border:2px solid var(--orange);border-radius:50%;background:var(--orange-soft);flex:none}
+.who{font-size:.86rem;margin-top:8px;padding:6px 10px;border:1px dashed var(--block-line);border-radius:6px}
+.who div{margin:1px 0}
+.bubble{font-family:"DotGothic16",sans-serif;font-size:1.02rem;border:2px solid var(--ink);border-radius:8px;padding:10px 12px;margin:14px 0 10px;position:relative;background:var(--paper);min-height:3.2em}
+.bubble::before{content:"";position:absolute;top:-9px;left:24px;width:14px;height:14px;background:var(--paper);border-left:2px solid var(--ink);border-top:2px solid var(--ink);transform:rotate(45deg)}
+.bubble .sp{display:block;font-family:"Zen Kaku Gothic New",sans-serif;font-size:.78rem;color:var(--ink-soft);margin-bottom:2px}
+.meters{display:grid;grid-template-columns:auto 1fr auto;gap:6px 10px;align-items:center;font-size:.88rem}
+.meters .bar{height:14px}
+.pips{letter-spacing:2px;color:var(--orange)}
+.note{font-size:.84rem;color:var(--ink-soft);margin-top:6px}
+table{width:100%;border-collapse:collapse;font-size:.88rem;margin-top:8px}
+th,td{border-bottom:1px solid var(--grid);padding:6px 4px;text-align:right;vertical-align:top}
+th:first-child,td:first-child{text-align:left}
+.list td,.list th{text-align:left}
+td.ok{color:var(--green);font-weight:700}
+td.ng{color:var(--red);font-weight:700}
+.tblwrap{overflow-x:auto}
+.rank{font-family:"DotGothic16",sans-serif;font-size:4.5rem;line-height:1;color:var(--orange);margin:6px 0}
+.slack{border-left:4px solid var(--orange);padding:6px 10px;background:var(--paper);border-radius:0 6px 6px 0;font-size:.92rem;margin-top:10px}
+.rules{padding-left:1.2em;margin:.6em 0;font-size:.9rem}
+.rules li{margin:.25em 0}
+.toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:8px 14px;border-radius:6px;font-size:.9rem;max-width:92vw;z-index:30;opacity:0;transition:opacity .2s;pointer-events:none}
+.toast.show{opacity:1}
+.legend{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:.8rem;color:var(--ink-soft)}
+.legend b{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:4px;vertical-align:middle}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="hud">
+    <h1>KPIダッシュ!街まわり営業</h1>
+    <span class="chip" id="date">10/5(月)</span>
+    <span class="chip" id="weather">晴れ</span>
+    <span class="clock" id="clock">9:00</span>
+    <span class="stam">体力 <span class="bar" id="stambar"><i style="width:100%"></i></span></span>
+  </header>
+
+  <div id="view">
+    <div id="gl"></div>
+    <canvas id="mini" width="560" height="400" aria-label="エリアマップ。クリックで拡大"></canvas>
+    <span class="miniTag">MAP</span>
+    <div id="banner"></div>
+    <div id="joy" aria-hidden="true"><div id="knob"></div></div>
+    <div class="zoom"><button class="btn" id="zin" aria-label="ズームイン">＋</button><button class="btn" id="zout" aria-label="ズームアウト">－</button></div>
+    <button class="btn pri" id="actBtn" hidden></button>
+    <div class="keys">WASD / 矢印で移動・E で入店・ホイールでズーム・地図クリックで拡大</div>
+  </div>
+
+  <aside class="side">
+    <section class="box">
+      <h2>今日のKPI <button class="btn sm" id="listBtn">顧客リスト</button></h2>
+      <div id="kpis"></div>
+    </section>
+    <section class="box near" id="near"></section>
+    <section class="box">
+      <h2>行動ログ</h2>
+      <ul class="log" id="log"></ul>
+    </section>
+    <div class="legend">
+      <span><b style="background:var(--green)"></b>アイドルタイム</span>
+      <span><b style="background:var(--red)"></b>ピーク帯</span>
+      <span><b style="background:#e0263c"></b>他媒体の営業</span>
+    </div>
+  </aside>
+</div>
+
+<div class="overlay" id="ov"><div class="card" id="card" role="dialog" aria-modal="true"></div></div>
+<div class="toast" id="toast" role="status"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+(()=>{
+const $=s=>document.querySelector(s);
+if(!window.THREE){$('#gl').innerHTML='<div class="err">3D表示の読み込みに失敗しました。通信環境を確認して再読み込みしてください。</div>';return;}
+const T3=window.THREE;
+const rnd=(a,b)=>a+Math.random()*(b-a);
+const ri=(a,b)=>Math.floor(rnd(a,b+1));
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const lerp=(a,b,t)=>a+(b-a)*t;
+const fmtT=t=>`${Math.floor(t/60)}:${String(Math.floor(t%60)).padStart(2,'0')}`;
+const yen=n=>'¥'+Math.round(n).toLocaleString('ja-JP');
+const DIRS=[[0,-1],[0,1],[-1,0],[1,0]];
+let seed=20261005;const srand=()=>{seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};
+
+// ================= DATA =================
+const COLS=28,ROWS=20,TS=4,DAYS=5,START=9*60,END=19*60,TIME_SCALE=2;
+const ROAD_R=[2,6,10,14,18],ROAD_C=[1,5,9,13,17,21,25],RIVER_X=19;
+const CAR_R=[2,10,18],CAR_C=[5,13,25];
+const WD=['月','火','水','木','金'];
+const TARGET={visit:8,meet:5,win:2,sales:100000};
+const KPI_LABEL={visit:'訪問',meet:'商談',win:'受注',sales:'売上'};
+const PRODUCTS={
+  予約:{name:'ネット予約',base:30000,issue:'予約の取りこぼし'},
+  集客:{name:'PR強化',base:50000,issue:'新規客が増えない'},
+  求人:{name:'求人掲載',base:40000,issue:'人手不足'}
+};
+const NEED_LINE={
+  予約:'営業中に予約の電話が鳴りっぱなしでさ。出られなくて取りこぼしてる気がするんだよね',
+  集客:'平日の夜がとにかく暇でね。常連さんはいるけど、新しいお客さんが増えないんだよ',
+  求人:'人が足りなくて。バイト募集しても全然来ないし、来てもすぐ辞めちゃうんだ'
+};
+const TOPICS={soccer:'地元のサッカー',baseball:'プロ野球',fish:'釣り',town:'駅前の再開発',food:'食材・仕入れ'};
+const TOPIC_LINE={
+  soccer:'お、サッカー見るの?ホームの試合はスタジアムまで応援に行ってるよ。今年こそ昇格だ!',
+  baseball:'野球!昨日の試合見た?あそこで代打はないよなあ',
+  fish:'釣りやるの?今の時期は青物がいいよ。今度一緒に行く?',
+  town:'再開発ね。駅前の人の流れ、ほんとに変わったよ。うちも他人事じゃなくてさ',
+  food:'わかる?この魚、漁港から直で入れてるんだよ。そこ気づく人少ないんだ'
+};
+const PERS={
+  人情派:{chat:1.6,data:.6,turns:0,close:1,desc:'情に厚い。世間話から入ると心を開く'},
+  数字派:{chat:.5,data:1.6,turns:0,close:1,desc:'数字で納得したい。雑談は短めに'},
+  職人気質:{chat:.8,data:1,turns:-1,close:1,desc:'手が離せない。信頼がないと提案を聞かない'},
+  慎重派:{chat:1,data:1.2,turns:0,close:.8,desc:'即決しない。不安を先に潰すこと'},
+  新しもの好き:{chat:1,data:1,turns:0,close:1.2,desc:'新しい施策に前向き。ただし気が変わりやすい'}
+};
+const OBJ={
+  価格:{line:a=>`正直、月${a}はキツいよ。利益なんて大して出てないんだから`,ok:'roi'},
+  効果:{line:()=>'前に別の媒体に載せたけど、全然効果なかったんだよね',ok:'diff'},
+  他媒体:{line:()=>'別のグルメサイトにはもう載せてるし、それで十分じゃない?',ok:'role'},
+  手間:{line:()=>'更新する暇なんてないよ。厨房で手一杯なんだから',ok:'support'}
+};
+const RESP={
+  roi:{label:'費用対効果で話す',sub:'1日あたり何組で回収できるか',ok:'…1日2組増えれば元が取れるのか。そう言われるとな'},
+  diff:{label:'前回との違いを示す',sub:'写真・導線・プラン設計',ok:'なるほど。前は写真も載せっぱなしだったな'},
+  role:{label:'役割分担を話す',sub:'客層の違いと併用の使い分け',ok:'確かに、あっちは宴会の団体ばっかりだもんな'},
+  support:{label:'手間を引き取る',sub:'初期設定と更新はこちらで代行',ok:'そこまでやってくれるなら助かるな'}
+};
+const SHOPS=[
+ {x:3,y:3,name:'洋食キッチン ぼんち',genre:'洋食',icon:'🍳',seats:22,need:'集客',type:'lunch',closed:2,mood:30,owner:'坂井 正男',age:'60代',pers:'人情派',topic:'baseball',clue:'壁に球団のカレンダー',obj:'手間',intro:'親父の代から40年、この場所でやってるんだ',col:'#e9d8b4'},
+ {x:7,y:5,name:'麺屋 いぶき',genre:'ラーメン',icon:'🍜',seats:14,need:'求人',type:'lunch',closed:0,mood:10,owner:'竹内 翔',age:'30代',pers:'職人気質',topic:'food',clue:'厨房の奥に煮干しの段ボールが積んである',obj:'価格',intro:'話は手短にね。スープ見てるから',col:'#c9c2b6'},
+ {x:3,y:9,name:'中華そば 福来',genre:'中華そば',icon:'🥢',seats:16,need:'集客',type:'lunch',closed:-1,mood:35,owner:'李 美玲',age:'40代',pers:'新しもの好き',topic:'town',clue:'レジ横に再開発の説明会チラシ',obj:'効果',intro:'食べログさん?SNSは自分でやってるけど、他にも何かやりたいと思ってたの',col:'#e7b7a3'},
+ {x:7,y:7,name:'スパイスカレー 月と象',genre:'カレー',icon:'🍛',seats:18,need:'集客',type:'lunch',closed:3,mood:25,owner:'川村 健',age:'40代',pers:'数字派',topic:'fish',clue:'入口に釣り竿が立てかけてある',obj:'効果',intro:'で、うちにどういうメリットがあるの?',col:'#f0cf84'},
+ {x:2,y:13,name:'定食 かのや',genre:'定食',icon:'🍚',seats:30,need:'求人',type:'lunch',closed:1,mood:35,owner:'鹿野 トシ子',age:'70代',pers:'人情派',topic:'food',clue:'手書きの「本日のおすすめ」が何枚も貼ってある',obj:'手間',intro:'あらまあ、若いのにスーツで大変ねえ',boss:{days:[2,4],who:'息子さん(経営担当)'},col:'#d9c7a6'},
+ {x:7,y:11,name:'ベーカリーカフェ ことり',genre:'カフェ',icon:'🥐',seats:20,need:'求人',type:'lunch',closed:0,mood:40,owner:'小鳥遊 葵',age:'30代',pers:'新しもの好き',topic:'town',clue:'新メニューの試作パンが並んでいる',obj:'他媒体',intro:'こんにちは!ちょうど焼き上がったところなんです',col:'#f3e3cf'},
+ {x:11,y:3,name:'イタリア食堂 Ponte',genre:'イタリアン',icon:'🍝',seats:32,need:'予約',type:'both',closed:0,mood:30,owner:'松尾 大輔',age:'40代',pers:'数字派',topic:'soccer',clue:'カウンターの上にサッカークラブのタオルマフラー',obj:'他媒体',intro:'駅近だから予約は多いんだけど、管理が大変でね',col:'#cfe0c3'},
+ {x:15,y:5,name:'鮨 小松',genre:'寿司',icon:'🍣',seats:12,need:'集客',type:'both',closed:2,mood:5,owner:'小松 源一',age:'60代',pers:'職人気質',topic:'fish',clue:'「本日の地魚」の木札',obj:'価格',intro:'…営業か。うちは口コミだけでやってきたんだ',col:'#e6e0d2'},
+ {x:11,y:7,name:'焼肉 牛勢',genre:'焼肉',icon:'🥩',seats:52,need:'予約',type:'dinner',closed:-1,mood:15,owner:'金田 剛',age:'50代',pers:'数字派',topic:'baseball',clue:'事務所の壁に売上グラフが貼ってある',obj:'価格',intro:'店長の金田です。本部の方針もあるんで、まずは話だけ',boss:{days:[1,3],who:'オーナー(他店と兼務)'},col:'#b9a49a'},
+ {x:15,y:9,name:'韓国食堂 ハヌル',genre:'韓国料理',icon:'🌶️',seats:34,need:'求人',type:'both',closed:-1,mood:30,owner:'朴 秀賢',age:'30代',pers:'新しもの好き',topic:'soccer',clue:'スタッフ募集の貼り紙が色あせている',obj:'他媒体',intro:'アンニョン!…あ、営業さんか。どうぞどうぞ',col:'#f2c0b0'},
+ {x:15,y:15,name:'ビストロ 川風',genre:'ビストロ',icon:'🍷',seats:26,need:'予約',type:'dinner',closed:0,mood:25,owner:'葭田 恵',age:'40代',pers:'慎重派',topic:'food',clue:'ワインの仕入れ伝票が山積み',obj:'効果',intro:'仕込み中なので、少しだけなら',col:'#c7d3e0'},
+ {x:11,y:17,name:'大衆割烹 なかじま',genre:'割烹',icon:'🍶',seats:40,need:'集客',type:'dinner',closed:-1,mood:20,owner:'中島 浩二',age:'50代',pers:'人情派',topic:'soccer',clue:'サッカー選手のサイン色紙が飾ってある',obj:'他媒体',intro:'おう、まあ座んなよ。お茶でいい?',col:'#d8c9ad'},
+ {x:23,y:3,name:'炭火焼鳥 とりまる',genre:'焼鳥',icon:'🍢',seats:28,need:'予約',type:'dinner',closed:0,mood:15,owner:'丸山 哲也',age:'40代',pers:'職人気質',topic:'baseball',clue:'焼き場の横に野球中継のラジオ',obj:'手間',intro:'串打ち中だから、手を動かしながらでいい?',col:'#a8907a'},
+ {x:20,y:5,name:'海鮮酒場 大漁丸',genre:'海鮮居酒屋',icon:'🐟',seats:48,need:'集客',type:'dinner',closed:-1,mood:25,owner:'稲毛 修',age:'50代',pers:'人情派',topic:'fish',clue:'大漁旗が天井に張ってある',obj:'効果',intro:'いらっしゃい!…なんだ、お客さんじゃないのか。ははは',col:'#b8cfe0'},
+ {x:24,y:5,name:'大衆酒場 みなと',genre:'居酒屋',icon:'🍺',seats:60,need:'求人',type:'dinner',closed:-1,mood:20,owner:'港 健太',age:'30代',pers:'数字派',topic:'soccer',clue:'シフト表が空欄だらけ',obj:'価格',intro:'店長の港です。手短にお願いできますか',boss:{days:[1,3],who:'エリアマネージャー'},col:'#c4ad8a'},
+ {x:23,y:9,name:'もつ焼き のれん',genre:'もつ焼き',icon:'🍻',seats:24,need:'予約',type:'dinner',closed:-1,mood:20,owner:'吉岡 誠',age:'50代',pers:'慎重派',topic:'baseball',clue:'常連のボトルがずらりと並ぶ',obj:'他媒体',intro:'うちは常連さんで持ってる店だからねえ',col:'#9e8a74'},
+ {x:20,y:12,name:'居酒屋 ひなた',genre:'居酒屋',icon:'🏮',seats:40,need:'予約',type:'dinner',closed:1,mood:30,owner:'本田 美咲',age:'30代',pers:'新しもの好き',topic:'town',clue:'SNS用の撮影スポットがある',obj:'手間',intro:'こんにちは〜!なにか面白い話ですか?',col:'#e8b9a0'},
+ {x:27,y:13,name:'天ぷら 寺尾',genre:'天ぷら',icon:'🍤',seats:20,need:'集客',type:'both',closed:2,mood:10,owner:'寺尾 正',age:'60代',pers:'慎重派',topic:'fish',clue:'「本日の江戸前」の黒板',obj:'価格',intro:'うちは昔ながらでやってるからね。新しいことはどうも',col:'#e2d6bd'},
+];
+
+// ================= GRID =================
+const grid=[];
+for(let y=0;y<ROWS;y++){grid[y]=[];for(let x=0;x<COLS;x++)grid[y][x]={t:(ROAD_R.includes(y)||ROAD_C.includes(x))?'road':'block'};}
+for(let x=0;x<COLS;x++)grid[0][x]={t:'rail'};
+for(let x=9;x<=16;x++)grid[1][x]={t:'station'};
+for(let y=1;y<ROWS;y++)grid[y][RIVER_X]={t:ROAD_R.includes(y)?'bridge':'river'};
+for(let y=11;y<=13;y++)for(let x=10;x<=12;x++)grid[y][x]={t:'park'};
+for(let y=15;y<=17;y++)for(let x=22;x<=24;x++)grid[y][x]={t:'shrine'};
+for(let x=0;x<=17;x++)if(grid[6][x].t==='road')grid[6][x].arcade=true;
+const SPOTS=[
+  {t:'cafe',x:7,y:3,name:'喫茶 ひとやすみ',icon:'☕'},
+  {t:'cafe',x:23,y:11,name:'カフェ 木漏れ日',icon:'☕'},
+  {t:'conv',x:16,y:13,name:'コンビニ',icon:'🏪'},
+  {t:'office',x:3,y:15,name:'営業所',icon:'🏢'},
+];
+SPOTS.forEach(p=>grid[p.y][p.x]={t:p.t,spot:p});
+const isRoad=(x,y)=>x>=0&&y>=0&&x<COLS&&y<ROWS&&(grid[y][x].t==='road'||grid[y][x].t==='bridge');
+const isWalk=(x,y)=>x>=0&&y>=0&&x<COLS&&y<ROWS&&['road','bridge','park'].includes(grid[y][x].t);
+SHOPS.forEach(s=>{grid[s.y][s.x]={t:'shop',shop:s};for(const[dx,dy]of DIRS)if(isRoad(s.x+dx,s.y+dy)){s.door=[s.x+dx,s.y+dy];break;}});
+SPOTS.forEach(p=>{for(const[dx,dy]of DIRS)if(isRoad(p.x+dx,p.y+dy)){p.door=[p.x+dx,p.y+dy];break;}});
+const wx=tx=>tx*TS+TS/2, wz=ty=>ty*TS+TS/2;
+const area=x=>x<9?'west':x<18?'center':'east';
+function areaName(tx,ty){
+  if(ty<=3&&tx>=6&&tx<=16)return 'ひなた駅前';
+  if(ty>=5&&ty<=7&&tx<=17)return '銀杏通り商店街';
+  if(tx>=18&&tx<=20)return '川沿いの道';
+  if(tx>=21)return 'のれん横丁';
+  if(tx>=9&&ty>=10&&ty<=14)return 'ひなた公園通り';
+  if(tx<=8&&ty>=8)return '西口オフィス街';
+  return 'ひなた本町';
+}
+// interactables
+const INTER=[];
+SHOPS.forEach(s=>INTER.push({kind:'shop',ref:s,tx:s.x,ty:s.y,door:s.door}));
+SPOTS.forEach(p=>INTER.push({kind:p.t,ref:p,tx:p.x,ty:p.y,door:p.door}));
+INTER.push({kind:'shrine',ref:{name:'ひなた神社',icon:'⛩️'},tx:23,ty:17,door:[23,18]});
+INTER.push({kind:'station',ref:{name:'ひなた駅',icon:'🚉'},tx:12,ty:1,door:[12,2]});
+INTER.forEach(i=>{i.px=(wx(i.tx)+wx(i.door[0]))/2;i.pz=(wz(i.ty)+wz(i.door[1]))/2;});
+
+// ================= SCHEDULE =================
+const PEAK={k:'peak',label:'ピーク帯',mark:'×',mod:-20,absent:0};
+const IDLE={k:'idle',label:'アイドルタイム',mark:'◎',mod:12,absent:.1};
+function status(s,t){
+  if(s.won)return {k:'won',label:'受注済',mark:'',mod:0,absent:0};
+  if(s.lost)return {k:'lost',label:'他社で決定',mark:'',mod:0,absent:0};
+  if(s.closed===G.day-1)return {k:'holiday',label:'定休日',mark:'',mod:0,absent:1};
+  const h=t/60;
+  if(s.type==='lunch'){
+    if(h<10.5)return {k:'prep',label:'仕込み中',mark:'△',mod:0,absent:.2};
+    if(h<13.5)return PEAK;
+    if(h<17)return IDLE;
+    return {k:'normal',label:'夜営業',mark:'△',mod:-5,absent:.15};
+  }
+  if(s.type==='dinner'){
+    if(h<13.5)return {k:'closed',label:'店主未出勤',mark:'×',mod:0,absent:.8};
+    if(h<17.5)return IDLE;
+    return PEAK;
+  }
+  if(h<11)return {k:'prep',label:'仕込み中',mark:'△',mod:0,absent:.3};
+  if(h<11.5)return {k:'normal',label:'開店直前',mark:'△',mod:-5,absent:.1};
+  if(h<13.5)return PEAK;
+  if(h<14)return {k:'normal',label:'ランチ終盤',mark:'△',mod:0,absent:.1};
+  if(h<17.5)return IDLE;
+  return PEAK;
+}
+const amount=(p,s)=>Math.round(PRODUCTS[p].base*(s.seats>=40?1.5:s.seats>=20?1:.7)/1000)*1000;
+const bestTime=s=>s.type==='dinner'?'15時〜17時':s.type==='lunch'?'14時〜16時':'14時半〜17時';
+
+// ================= STATE =================
+let G,E=null;
+function newGame(){
+  G={day:1,time:START,stamina:100,x:wx(3),z:wz(14),face:Math.PI,rain:false,mode:'title',
+     today:{visit:0,meet:0,win:0,sales:0},total:{visit:0,meet:0,win:0,sales:0},log:[],hint:'',ate:false,pray:false,news:[],areaName:''};
+  SHOPS.forEach(s=>Object.assign(s,{won:false,lost:false,carry:0,trust:0,needKnown:false,refused:false,refusedBefore:false,met:false,topicKnown:false,bossKnown:false,objCleared:false,ate:false,wrongProp:null,rivalToday:false}));
+}
+const dateStr=()=>`10/${4+G.day}(${WD[G.day-1]})`;
+function startDay(){
+  Object.assign(G,{time:START,stamina:100,x:wx(3)+1.3,z:wz(14)-1.2,face:Math.PI,rain:Math.random()<.3,today:{visit:0,meet:0,win:0,sales:0},log:[],ate:false,pray:false,news:[]});
+  R={tx:12,ty:2,ptx:12,pty:2,prog:0,path:[],target:null,busy:0};
+  SHOPS.forEach(s=>{if(s.refused)s.refusedBefore=true;s.refused=false;s.rivalToday=false;
+    if(G.day>1){s.carry=Math.round(s.carry*.8);s.trust=Math.max(0,s.trust-1);}});
+  const open=SHOPS.filter(s=>!s.won&&!s.lost),opts=[];
+  const a=open.filter(s=>!s.needKnown);if(a.length){const s=pick(a);opts.push(()=>{s.needKnown=true;return `${s.name}の${fnm(s)}さん、最近「${PRODUCTS[s.need].issue}」で悩んでるらしい。${bestTime(s)}あたりに寄ってみて`;});}
+  const b=open.filter(s=>!s.topicKnown);if(b.length){const s=pick(b);opts.push(()=>{s.topicKnown=true;return `${s.name}の${fnm(s)}さん、${TOPICS[s.topic]}の話をすると機嫌がいいらしいよ`;});}
+  const c=open.filter(s=>s.boss&&!s.bossKnown);if(c.length){const s=pick(c);opts.push(()=>{s.bossKnown=true;return `${s.name}は決裁が${s.boss.who}。${s.boss.days.map(d=>WD[d]).join('・')}曜しか店にいないから注意`;});}
+  G.hint=opts.length?pick(opts)():'残りのお店は情報が揃ってるはず。あとは刈り取りだ';
+  addLog(`${dateStr()} 開始。${G.rain?'雨で歩くのが遅くなる':'晴れ'}`);
+  setRain(G.rain);
+  G.mode='morning';showMorning();
+}
+const fnm=s=>s.owner.split(' ')[0];
+function addLog(text){G.log.unshift({t:G.time,text});if(G.log.length>40)G.log.pop();renderLog();}
+function pass(min){G.time+=min;rivalAdvance(min);}
+
+// ================= RIVAL =================
+let R=null;
+function bfs(sx,sy,goal){
+  const key=(x,y)=>y*COLS+x,gk=key(goal[0],goal[1]),prev=new Map([[key(sx,sy),-1]]),q=[[sx,sy]];
+  while(q.length){
+    const [x,y]=q.shift();
+    if(key(x,y)===gk){const p=[];let k=gk;while(k!==key(sx,sy)){p.unshift([k%COLS,Math.floor(k/COLS)]);k=prev.get(k);}return p;}
+    for(const[dx,dy]of DIRS){const nx=x+dx,ny=y+dy;if(isRoad(nx,ny)&&!prev.has(key(nx,ny))){prev.set(key(nx,ny),key(x,y));q.push([nx,ny]);}}
+  }
+  return [];
+}
+function rivalAdvance(gm){
+  if(!R||G.time<10*60||G.time>18*60+30)return;
+  while(gm>0){
+    if(R.busy>0){const u=Math.min(R.busy,gm);R.busy-=u;gm-=u;if(R.busy<=0)R.target=null;continue;}
+    if(!R.target){
+      const c=SHOPS.filter(s=>!s.won&&!s.lost&&!s.rivalToday&&s.closed!==G.day-1);
+      if(!c.length)return;
+      R.target=pick(c);R.path=bfs(R.tx,R.ty,R.target.door);R.prog=0;continue;
+    }
+    if(R.path.length){
+      const need=(1-R.prog)/0.45;
+      if(gm>=need){gm-=need;R.ptx=R.tx;R.pty=R.ty;[R.tx,R.ty]=R.path.shift();R.prog=0;}
+      else{R.prog+=gm*0.45;gm=0;}
+      continue;
+    }
+    const s=R.target;s.rivalToday=true;R.busy=18;
+    if(!s.won){
+      s.carry=Math.max(0,s.carry-8);
+      const near=Math.hypot(G.x-wx(R.tx),G.z-wz(R.ty))<28;
+      if(s.carry<25&&Math.random()<.12){s.lost=true;G.news.push(`${s.name}が他媒体と契約`);addLog(`⚠ ${s.name}、他媒体で決めたらしい…`);}
+      else if(near)addLog(`他媒体の営業が${s.name}に入っていくのを見かけた`);
+    }
+  }
+}
+function rivalPos(){
+  if(!R)return null;
+  const nx=R.path.length?R.path[0]:[R.tx,R.ty];
+  return {x:lerp(wx(R.tx),wx(nx[0]),R.prog),z:lerp(wz(R.ty),wz(nx[1]),R.prog),dx:nx[0]-R.tx,dz:nx[1]-R.ty};
+}
+
+// ================= THREE SETUP =================
+const view=$('#view'),glWrap=$('#gl');
+const renderer=new T3.WebGLRenderer({antialias:true});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+renderer.shadowMap.enabled=true;renderer.shadowMap.type=T3.PCFSoftShadowMap;
+glWrap.appendChild(renderer.domElement);
+const scene=new T3.Scene();
+const camera=new T3.PerspectiveCamera(45,1,0.5,400);
+const hemi=new T3.HemisphereLight(0xdfefff,0x6b6455,.75);scene.add(hemi);
+const sun=new T3.DirectionalLight(0xffffff,.9);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);
+Object.assign(sun.shadow.camera,{left:-34,right:34,top:34,bottom:-34,near:1,far:140});sun.shadow.bias=-0.0006;
+scene.add(sun);scene.add(sun.target);
+scene.fog=new T3.Fog(0xbfe3ff,70,170);
+const matCache={};
+const M=(c,o={})=>{const k=c+'|'+JSON.stringify(o);return matCache[k]||(matCache[k]=new T3.MeshLambertMaterial(Object.assign({color:c},o)));};
+function cvTex(w,h,fn){const c=document.createElement('canvas');c.width=w;c.height=h;fn(c.getContext('2d'),w,h);const t=new T3.CanvasTexture(c);t.anisotropy=4;return t;}
+function rrect(c,x,y,w,h,r){c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath();}
+const EMOJI_FONT='"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';
+const JP_FONT='"Zen Kaku Gothic New","Hiragino Sans","Meiryo",sans-serif';
+const nightMats=[];// {mat, day, night}
+const night=(mat,d,n)=>{nightMats.push({mat,d,n});return mat;};
+
+// ground
+const W=COLS*TS,H=ROWS*TS;
+const ground=new T3.Mesh(new T3.PlaneGeometry(W+80,H+80),M('#a9ad9f'));ground.rotation.x=-Math.PI/2;ground.position.set(W/2,-0.02,H/2);ground.receiveShadow=true;scene.add(ground);
+const plane=new T3.PlaneGeometry(1,1);plane.rotateX(-Math.PI/2);
+const box=new T3.BoxGeometry(1,1,1);const boxUp=box.clone();boxUp.translate(0,.5,0);
+const dummy=new T3.Object3D();
+function inst(geo,mat,list,{shadow=false,receive=true}={}){
+  if(!list.length)return null;
+  const m=new T3.InstancedMesh(geo,mat,list.length);
+  list.forEach((o,i)=>{dummy.position.set(o.x,o.y||0,o.z);dummy.rotation.set(o.rx||0,o.ry||0,o.rz||0);dummy.scale.set(o.sx||1,o.sy||1,o.sz||1);dummy.updateMatrix();m.setMatrixAt(i,dummy.matrix);if(o.c)m.setColorAt(i,new T3.Color(o.c));});
+  m.castShadow=shadow;m.receiveShadow=receive;scene.add(m);return m;
+}
+// roads
+const roadL=[],arcL=[],walkL=[],dashL=[],zebraL=[],lampL=[],bulbL=[],railL=[],bridgeL=[];
+const brickTex=cvTex(64,64,(c)=>{c.fillStyle='#c79a73';c.fillRect(0,0,64,64);c.fillStyle='#b5845f';for(let y=0;y<4;y++)for(let x=0;x<4;x++)if((x+y)%2)c.fillRect(x*16,y*16,16,16);c.strokeStyle='rgba(255,255,255,.25)';for(let i=0;i<=64;i+=16){c.beginPath();c.moveTo(i,0);c.lineTo(i,64);c.moveTo(0,i);c.lineTo(64,i);c.stroke();}});
+brickTex.wrapS=brickTex.wrapT=T3.RepeatWrapping;
+for(let y=0;y<ROWS;y++)for(let x=0;x<COLS;x++){
+  const g=grid[y][x],X=wx(x),Z=wz(y);
+  if(g.t==='road'){
+    (g.arcade?arcL:roadL).push({x:X,y:.02,z:Z,sx:TS,sz:TS});
+    if(!g.arcade){
+      DIRS.forEach(([dx,dy])=>{if(!isRoad(x+dx,y+dy)){walkL.push({x:X+dx*1.5,y:.07,z:Z+dy*1.5,sx:dx?1:TS,sy:.14,sz:dy?1:TS});}});
+      const hr=ROAD_R.includes(y),vr=ROAD_C.includes(x);
+      if(hr&&!vr){dashL.push({x:X-1,y:.04,z:Z,sx:1,sy:.02,sz:.14},{x:X+1,y:.04,z:Z,sx:1,sy:.02,sz:.14});}
+      if(vr&&!hr){dashL.push({x:X,y:.04,z:Z-1,sx:.14,sy:.02,sz:1},{x:X,y:.04,z:Z+1,sx:.14,sy:.02,sz:1});}
+      if(hr&&vr){
+        lampL.push({x:X+1.85,y:0,z:Z+1.85,sx:.12,sy:3.4,sz:.12});bulbL.push({x:X+1.85,y:3.45,z:Z+1.85,sx:.32,sy:.32,sz:.32});
+        DIRS.forEach(([dx,dy])=>{if(isRoad(x+dx,y+dy)&&!grid[y+dy][x+dx].arcade&&grid[y+dy][x+dx].t==='road'){
+          for(let i=-2;i<=2;i++){const along=i*.55;zebraL.push(dx?{x:X+dx*1.5,y:.045,z:Z+along,sx:.9,sy:.02,sz:.32}:{x:X+along,y:.045,z:Z+dy*1.5,sx:.32,sy:.02,sz:.9});}}});
+      }
+    }
+  }
+  if(g.t==='bridge'){bridgeL.push({x:X,y:0,z:Z,sx:TS,sy:.32,sz:TS+.4});railL.push({x:X,y:.3,z:Z-1.95,sx:TS,sy:.55,sz:.12},{x:X,y:.3,z:Z+1.95,sx:TS,sy:.55,sz:.12});}
+}
+// bridges are crossing the river vertically placed along x, adjust rails orientation: river runs N-S so rails along z edges? bridge spans E-W -> rails on north/south edges (z) correct.
+inst(plane,M('#4b5059'),roadL);
+inst(plane,new T3.MeshLambertMaterial({map:brickTex}),arcL);
+inst(boxUp,M('#c3c6c2'),walkL);
+inst(box,M('#f2f2ea'),dashL,{receive:false});
+inst(box,M('#f2f2ea'),zebraL,{receive:false});
+inst(boxUp,M('#9a9da5'),bridgeL);
+inst(boxUp,M('#e9e3d6'),railL,{shadow:true});
+inst(boxUp,M('#3b4150'),lampL,{shadow:true});
+const bulbMat=night(new T3.MeshLambertMaterial({color:'#fff3cf',emissive:'#ffd98a',emissiveIntensity:0}),0,1.2);
+inst(new T3.SphereGeometry(.5,8,6),bulbMat,bulbL,{receive:false});
+// rail
+const railBed=new T3.Mesh(new T3.PlaneGeometry(W+80,TS),M('#7b766f'));railBed.rotation.x=-Math.PI/2;railBed.position.set(W/2,.02,wz(0));scene.add(railBed);
+[-.75,.75].forEach(o=>{const r=new T3.Mesh(new T3.BoxGeometry(W+80,.14,.12),M('#b8bcc4'));r.position.set(W/2,.12,wz(0)+o);scene.add(r);});
+// river
+const waterTex=cvTex(64,128,(c,w,h)=>{c.fillStyle='#4f8fc0';c.fillRect(0,0,w,h);c.strokeStyle='rgba(255,255,255,.35)';c.lineWidth=2;for(let i=0;i<10;i++){const y=Math.random()*h,x=Math.random()*w;c.beginPath();c.moveTo(x,y);c.quadraticCurveTo(x+8,y-4,x+16,y);c.stroke();}});
+waterTex.wrapS=waterTex.wrapT=T3.RepeatWrapping;waterTex.repeat.set(1,8);
+const river=new T3.Mesh(new T3.PlaneGeometry(TS,(ROWS-1)*TS),new T3.MeshLambertMaterial({map:waterTex}));river.rotation.x=-Math.PI/2;river.position.set(wx(RIVER_X),.01,(1+ROWS)/2*TS);scene.add(river);
+// buildings (generic blocks)
+const winTex=cvTex(64,64,(c)=>{c.fillStyle='#ffffff';c.fillRect(0,0,64,64);c.fillStyle='#5a6577';for(let i=0;i<3;i++)c.fillRect(6+i*20,16,12,24);c.fillStyle='rgba(0,0,0,.12)';c.fillRect(0,58,64,6);});
+const emiTex=cvTex(64,64,(c)=>{c.fillStyle='#000';c.fillRect(0,0,64,64);for(let i=0;i<3;i++){c.fillStyle=Math.random()<.65?'#ffd27a':'#222';c.fillRect(6+i*20,16,12,24);}});
+const roofMat=M('#8d949d');
+const floorMats={};
+function floorMat(f){
+  if(floorMats[f])return floorMats[f];
+  const m=winTex.clone(),e=emiTex.clone();[m,e].forEach(t=>{t.needsUpdate=true;t.wrapS=t.wrapT=T3.RepeatWrapping;t.repeat.set(1,f);});
+  const side=night(new T3.MeshLambertMaterial({map:m,emissive:'#ffd58a',emissiveMap:e,emissiveIntensity:0}),0,.95);
+  return floorMats[f]=[side,side,roofMat,roofMat,side,side];
+}
+const BCOL=['#e7dccb','#d6d9dc','#c9d6e3','#efe4cf','#d9b9a4','#cfd7c8','#e3cfc4','#bfc6cf'];
+const bByF={};
+for(let y=1;y<ROWS;y++)for(let x=0;x<COLS;x++){
+  if(grid[y][x].t!=='block')continue;
+  const a=areaName(x,y);
+  let f;
+  if(a==='ひなた駅前')f=ri(3,4);else if(a==='西口オフィス街')f=ri(2,4);else if(a==='銀杏通り商店街')f=ri(1,2);else if(a==='のれん横丁')f=ri(1,2);else if(a==='川沿いの道')f=ri(2,3);else f=srand()<.3?ri(3,4):ri(1,2);
+  const h=f*3+.4,s=3.2+srand()*.5;
+  (bByF[f]=bByF[f]||[]).push({x:wx(x),y:0,z:wz(y),sx:s,sy:h,sz:s,c:pick(BCOL)});
+}
+const BLD=[];
+Object.keys(bByF).forEach(f=>{const m=inst(boxUp,floorMat(+f),bByF[f],{shadow:true});bByF[f].forEach((o,i)=>BLD.push({m,i,x:o.x,z:o.z,s:o.sx,h:o.sy,cur:o.sy}));});
+// lanterns in yokocho & arcade banners
+const lantL=[],banL=[];
+for(let y=1;y<ROWS;y++)for(let x=0;x<COLS;x++){
+  const t=grid[y][x].t;if(t!=='block'&&t!=='shop')continue;
+  for(const[dx,dy]of DIRS){if(!isRoad(x+dx,y+dy))continue;
+    if(x>=21&&srand()<.8)lantL.push({x:wx(x)+dx*1.9+(dy?-.9:0),y:2.7,z:wz(y)+dy*1.9+(dx?-.9:0),sx:.36,sy:.5,sz:.36});
+    if(y+dy===6&&x<=17&&!(dx))banL.push({x:wx(x)+(srand()-.5)*2,y:3.3,z:wz(y)+dy*1.7,sx:.7,sy:1.1,sz:.05,c:pick(['#e76f51','#2a9d8f','#e9c46a','#f4a261','#c1121f','#3a86ff'])});
+  }
+}
+const lantMat=night(new T3.MeshLambertMaterial({color:'#d62828',emissive:'#ff4b2b',emissiveIntensity:.1}),.1,1.3);
+inst(new T3.SphereGeometry(.5,8,6),lantMat,lantL,{receive:false});
+inst(box,new T3.MeshLambertMaterial({color:'#ffffff'}),banL,{receive:false});
+// park & shrine
+const treeTrunk=new T3.CylinderGeometry(.14,.2,1.4,6);treeTrunk.translate(0,.7,0);
+const treeTop=new T3.SphereGeometry(1,8,6);
+const parkL=[],shrL=[],trunkL=[],topL=[];
+for(let y=0;y<ROWS;y++)for(let x=0;x<COLS;x++){
+  const t=grid[y][x].t;
+  if(t==='park'){parkL.push({x:wx(x),y:.03,z:wz(y),sx:TS,sz:TS});if(!(x===11&&y===12)){const n=ri(1,2);for(let i=0;i<n;i++){const px=wx(x)+rnd(-1.3,1.3),pz=wz(y)+rnd(-1.3,1.3),s=rnd(.8,1.2);trunkL.push({x:px,z:pz,sy:s});topL.push({x:px,y:1.9*s,z:pz,sx:1.1*s,sy:1.1*s,sz:1.1*s,c:pick(['#5c9b4f','#6aa84f','#4f8a3f'])});}}}
+  if(t==='shrine'){shrL.push({x:wx(x),y:.03,z:wz(y),sx:TS,sz:TS});if(!(x===23&&y>=16)){const px=wx(x)+rnd(-1,1),pz=wz(y)+rnd(-1,1);trunkL.push({x:px,z:pz,sy:1.6});topL.push({x:px,y:3,z:pz,sx:1.5,sy:1.8,sz:1.5,c:'#3f6b3a'});}}
+}
+inst(plane,M('#86b56c'),parkL);inst(plane,M('#d4c8af'),shrL);
+inst(treeTrunk,M('#7a5a3a'),trunkL,{shadow:true});
+inst(treeTop,new T3.MeshLambertMaterial({color:'#ffffff'}),topL,{shadow:true});
+// fountain
+const fount=new T3.Mesh(new T3.CylinderGeometry(1.4,1.5,.5,16),M('#c9ccd1'));fount.position.set(wx(11),.25,wz(12));scene.add(fount);
+const fw=new T3.Mesh(new T3.CylinderGeometry(1.2,1.2,.05,16),new T3.MeshLambertMaterial({color:'#7fb6e0'}));fw.position.set(wx(11),.5,wz(12));scene.add(fw);
+// benches
+[[10,11],[12,13],[10,13]].forEach(([x,y])=>{const b=new T3.Mesh(box,M('#8a6a4a'));b.scale.set(1.6,.4,.5);b.position.set(wx(x),.45,wz(y));b.castShadow=true;scene.add(b);});
+// shrine hall & torii
+{const hall=new T3.Mesh(box,M('#b5523b'));hall.scale.set(3,2.2,2.6);hall.position.set(wx(23),1.1,wz(16)-.3);hall.castShadow=true;scene.add(hall);
+ const roof=new T3.Mesh(new T3.ConeGeometry(2.7,1.5,4),M('#3c3f46'));roof.rotation.y=Math.PI/4;roof.position.set(wx(23),2.95,wz(16)-.3);roof.castShadow=true;scene.add(roof);
+ const tr=M('#d1442c'),tz=wz(17)+1.5;
+ [-1.1,1.1].forEach(o=>{const p=new T3.Mesh(new T3.CylinderGeometry(.14,.16,3,8),tr);p.position.set(wx(23)+o,1.5,tz);p.castShadow=true;scene.add(p);});
+ const b1=new T3.Mesh(box,M('#2b2b2b'));b1.scale.set(3.4,.22,.32);b1.position.set(wx(23),3.05,tz);scene.add(b1);
+ const b2=new T3.Mesh(box,tr);b2.scale.set(2.8,.18,.24);b2.position.set(wx(23),2.55,tz);scene.add(b2);}
+// station
+{const st=new T3.Mesh(boxUp,M('#e8e2d6'));st.scale.set(31,6.5,3.4);st.position.set((wx(9)+wx(16))/2,0,wz(1));st.castShadow=true;st.receiveShadow=true;scene.add(st);
+ const gl=new T3.Mesh(new T3.PlaneGeometry(24,2.6),night(new T3.MeshLambertMaterial({color:'#9fc3dd',emissive:'#fff1c9',emissiveIntensity:.05}),.05,.9));gl.position.set((wx(9)+wx(16))/2,1.6,wz(1)+1.71);scene.add(gl);
+ const rf=new T3.Mesh(box,M('#5b6472'));rf.scale.set(32,.3,4);rf.position.set((wx(9)+wx(16))/2,6.6,wz(1));scene.add(rf);}
+// office
+const BLD_EXTRA=[];
+{const o=new T3.Mesh(boxUp,night(new T3.MeshLambertMaterial({color:'#7fa8d6',emissive:'#ffe2a0',emissiveIntensity:0}),0,.35));o.scale.set(3.5,11,3.5);o.position.set(wx(3),0,wz(15));o.castShadow=true;scene.add(o);BLD_EXTRA.push({mesh:o,x:wx(3),z:wz(15),h:11});}
+
+// ---- shops & spots ----
+const stripeTex={};
+function awningTex(col){return stripeTex[col]||(stripeTex[col]=cvTex(64,32,(c)=>{for(let i=0;i<8;i++){c.fillStyle=i%2?'#ffffff':col;c.fillRect(i*8,0,8,32);}}));}
+const winMat=night(new T3.MeshLambertMaterial({color:'#4a3b2a',emissive:'#ffc46b',emissiveIntensity:.25}),.25,1.25);
+const darkWin=M('#3a3f48');
+const AWN=['#d62828','#2a9d8f','#264653','#e76f51','#6d597a','#1d3557'];
+function makeSign(w=440,h=124){const c=document.createElement('canvas');c.width=w;c.height=h;const t=new T3.CanvasTexture(c);t.anisotropy=4;const sp=new T3.Sprite(new T3.SpriteMaterial({map:t,transparent:true,depthWrite:false}));sp.scale.set(5.2,5.2*h/w,1);sp.userData={c,t};return sp;}
+function drawSign(sp,{icon,name,sub,ring='#1d2a4a',fill='#ffffff',txt='#1d2a4a',subc='#56627c'}){
+  const {c,t}=sp.userData,x=c.getContext('2d'),w=c.width,h=c.height;
+  x.clearRect(0,0,w,h);rrect(x,5,5,w-10,h-10,20);x.fillStyle=fill;x.fill();x.lineWidth=7;x.strokeStyle=ring;x.stroke();
+  x.textBaseline='middle';x.textAlign='left';x.font=`58px ${EMOJI_FONT}`;x.fillText(icon,22,h/2+2);
+  let fs=36;x.font=`900 ${fs}px ${JP_FONT}`;while(x.measureText(name).width>w-120&&fs>20){fs-=2;x.font=`900 ${fs}px ${JP_FONT}`;}
+  x.fillStyle=txt;x.fillText(name,98,sub?h/2-16:h/2);
+  if(sub){x.font=`700 25px ${JP_FONT}`;x.fillStyle=subc;x.fillText(sub,98,h/2+24);}
+  t.needsUpdate=true;
+}
+const SHOPG=[];
+function buildFront(tx,ty,door,{col,awn,h=4.2,winM=winMat}){
+  const g=new T3.Group();g.position.set(wx(tx),0,wz(ty));g.rotation.y=Math.atan2(door[0]-tx,door[1]-ty);
+  const body=new T3.Mesh(boxUp,M(col));body.scale.set(3.4,h,3.4);body.castShadow=true;body.receiveShadow=true;g.add(body);
+  const roof=new T3.Mesh(box,M('#4a4f5a'));roof.scale.set(3.7,.3,3.7);roof.position.y=h+.15;roof.castShadow=true;g.add(roof);
+  const win=new T3.Mesh(new T3.PlaneGeometry(1.9,1.5),winM);win.position.set(-.55,1.45,1.71);g.add(win);
+  const door3=new T3.Mesh(new T3.PlaneGeometry(.85,2),M('#3b2f28'));door3.position.set(1.05,1,1.71);g.add(door3);
+  const noren=new T3.Mesh(new T3.PlaneGeometry(.95,.55),M(awn,{side:T3.DoubleSide}));noren.position.set(1.05,1.75,1.78);g.add(noren);
+  const aw=new T3.Mesh(box,new T3.MeshLambertMaterial({map:awningTex(awn)}));aw.scale.set(3.4,.08,1.1);aw.position.set(0,2.75,2.1);aw.rotation.x=.38;aw.castShadow=true;g.add(aw);
+  scene.add(g);SHOPG.push({g,x:wx(tx),z:wz(ty)});return {g,win};
+}
+SHOPS.forEach((s,i)=>{
+  const f=buildFront(s.x,s.y,s.door,{col:s.col,awn:AWN[i%AWN.length],h:s.x>=20?3.8:4.4});
+  s.win=f.win;s.sign=makeSign();s.sign.position.set(wx(s.x)+(s.door[0]-s.x)*1.2,6,wz(s.y)+(s.door[1]-s.y)*1.2);scene.add(s.sign);s.signKey='';
+});
+SPOTS.forEach(p=>{
+  if(p.t==='office'){p.sign=makeSign();p.sign.position.set(wx(p.x)-2.4,3.4,wz(p.y)-2.6);scene.add(p.sign);drawSign(p.sign,{icon:'🏢',name:'営業所',sub:'日報を書いて退勤',ring:'#1d2a4a'});return;}
+  const conv=p.t==='conv';
+  buildFront(p.x,p.y,p.door,{col:conv?'#f4f6f8':'#d8c3a5',awn:conv?'#2a9d8f':'#3d6b45',h:conv?3.6:4,winM:conv?night(new T3.MeshLambertMaterial({color:'#e8f4ff',emissive:'#ffffff',emissiveIntensity:.5}),.5,1.1):winMat});
+  p.sign=makeSign();p.sign.position.set(wx(p.x)+(p.door[0]-p.x)*1.2,5.6,wz(p.y)+(p.door[1]-p.y)*1.2);scene.add(p.sign);
+  drawSign(p.sign,{icon:p.icon,name:p.name,sub:conv?'体力+15/5分':'体力+40/20分',ring:'#2f8f5b'});
+});
+{const s=makeSign();s.position.set(wx(12.5),8.6,wz(1)+1.5);s.scale.multiplyScalar(1.5);scene.add(s);drawSign(s,{icon:'🚉',name:'ひなた駅',sub:'JR・私鉄 のりかえ'});}
+{const s=makeSign();s.position.set(wx(23),5.2,wz(17)+2);scene.add(s);drawSign(s,{icon:'⛩️',name:'ひなた神社',sub:'1日1回お参りできる',ring:'#d1442c'});}
+function refreshSigns(){
+  SHOPS.forEach(s=>{
+    const st=status(s,G.time);const key=st.k+(s.refused?'r':'');
+    if(key===s.signKey)return;s.signKey=key;
+    const o={icon:s.icon,name:s.name,sub:`${st.label} ${st.mark}`};
+    if(st.k==='idle')o.ring='#2f8f5b';
+    else if(st.k==='peak')o.ring='#d6413a';
+    else if(st.k==='won'){o.ring='#f09000';o.fill='#ffe2b0';o.sub='受注済 ✓';}
+    else if(st.k==='holiday'||st.k==='lost'){o.ring='#8a93a3';o.fill='#dde1e7';o.subc='#d6413a';}
+    if(s.refused){o.sub='本日お断り';o.subc='#d6413a';}
+    drawSign(s.sign,o);
+    s.win.material=(st.k==='holiday'||st.k==='lost'||st.k==='closed')?darkWin:winMat;
+  });
+}
+
+// ================= PEOPLE =================
+const PG={body:new T3.CylinderGeometry(.24,.29,.72,8),head:new T3.SphereGeometry(.19,10,8),hair:new T3.SphereGeometry(.205,10,6,0,Math.PI*2,0,Math.PI/2),
+  leg:new T3.BoxGeometry(.15,.66,.17),arm:new T3.BoxGeometry(.11,.56,.13),umb:new T3.ConeGeometry(.85,.35,10,1,true),tie:new T3.BoxGeometry(.08,.34,.04),bag:new T3.BoxGeometry(.42,.3,.1),apron:new T3.BoxGeometry(.5,.6,.05)};
+PG.leg.translate(0,-.33,0);PG.arm.translate(0,-.28,0);
+const SHIRT=['#e76f51','#2a9d8f','#e9c46a','#f4a261','#264653','#8d99ae','#f8f9fa','#6d597a','#b5838d','#457b9d','#a8dadc','#3a3a3a','#f8f9fa','#f8f9fa'];
+const PANTS=['#2f3e46','#1d3557','#6c584c','#495057','#22223b','#3d405b'];
+const SKIN=['#f1c9a5','#e0ac69','#c68642','#f6d7b0'];
+const HAIR=['#1b1b1b','#3b2a1a','#5a3825','#8d8d8d','#c9b18b','#1b1b1b'];
+const UMB=['#3a86ff','#ff006e','#8338ec','#2a9d8f','#f4a261','#222222'];
+const people=[];
+function person(o={}){
+  const g=new T3.Group();
+  const shirt=o.shirt||pick(SHIRT),pants=o.pants||pick(PANTS);
+  const body=new T3.Mesh(PG.body,M(shirt));body.position.y=1.04;body.castShadow=true;g.add(body);
+  const head=new T3.Mesh(PG.head,M(o.skin||pick(SKIN)));head.position.y=1.6;head.castShadow=true;g.add(head);
+  const hr=new T3.Mesh(PG.hair,M(o.hair||pick(HAIR)));hr.position.y=1.63;g.add(hr);
+  const legL=new T3.Mesh(PG.leg,M(pants)),legR=new T3.Mesh(PG.leg,M(pants));legL.position.set(-.1,.7,0);legR.position.set(.1,.7,0);g.add(legL,legR);
+  const armM=M(o.arm||shirt);const armL=new T3.Mesh(PG.arm,armM),armR=new T3.Mesh(PG.arm,armM);armL.position.set(-.33,1.36,0);armR.position.set(.33,1.36,0);g.add(armL,armR);
+  if(o.tie){const t=new T3.Mesh(PG.tie,M(o.tie));t.position.set(0,1.2,.27);g.add(t);}
+  if(o.bag){const b=new T3.Mesh(PG.bag,M('#3b2f28'));b.position.set(0,-.55,0);armR.add(b);}
+  if(o.apron){const a=new T3.Mesh(PG.apron,M('#f2efe8'));a.position.set(0,.95,.27);g.add(a);}
+  const umb=new T3.Mesh(PG.umb,M(pick(UMB),{side:T3.DoubleSide}));umb.position.y=2.2;umb.visible=false;g.add(umb);
+  g.userData={legL,legR,armL,armR,body,head,umb,phase:Math.random()*6};
+  scene.add(g);return g;
+}
+function animWalk(g,dt,speed){const u=g.userData;u.phase+=dt*speed*3.4;const s=Math.sin(u.phase)*.62;
+  u.legL.rotation.x=s;u.legR.rotation.x=-s;u.armL.rotation.x=-s*.75;u.armR.rotation.x=s*.75;u.body.position.y=1.04+Math.abs(Math.cos(u.phase))*.05;u.head.position.y=1.6+Math.abs(Math.cos(u.phase))*.05;}
+function animIdle(g,dt,talk){const u=g.userData;u.phase+=dt;
+  ['legL','legR','armL','armR'].forEach(k=>u[k].rotation.x*=.85);
+  u.body.position.y=1.04+Math.sin(u.phase*1.7)*.01;u.head.position.y=1.6;
+  if(talk){u.armR.rotation.x=-Math.max(0,Math.sin(u.phase*2.3))*.9;u.head.rotation.y=Math.sin(u.phase*.9)*.25;}}
+function turnTo(g,ang,dt,k=10){let d=ang-g.rotation.y;d=Math.atan2(Math.sin(d),Math.cos(d));g.rotation.y+=d*Math.min(1,dt*k);}
+// player
+const player=person({shirt:'#26365e',pants:'#1c2540',arm:'#26365e',skin:'#f1c9a5',hair:'#1b1b1b',tie:'#f09000',bag:true});
+const pRing=new T3.Mesh(new T3.RingGeometry(.55,.75,24),new T3.MeshBasicMaterial({color:'#f09000',transparent:true,opacity:.85}));pRing.rotation.x=-Math.PI/2;pRing.position.y=.06;scene.add(pRing);
+const pArrow=new T3.Mesh(new T3.ConeGeometry(.22,.45,4),new T3.MeshBasicMaterial({color:'#f09000'}));pArrow.rotation.x=Math.PI;scene.add(pArrow);
+// rival
+const rival=person({shirt:'#1b1b1b',pants:'#141414',arm:'#1b1b1b',tie:'#e0263c',bag:true,hair:'#1b1b1b'});rival.visible=false;
+const rTag=makeSign(220,90);rTag.scale.set(1.9,.78,1);scene.add(rTag);
+{const x=rTag.userData.c.getContext('2d');rrect(x,4,4,212,82,16);x.fillStyle='#e0263c';x.fill();x.fillStyle='#fff';x.font=`900 40px ${JP_FONT}`;x.textAlign='center';x.textBaseline='middle';x.fillText('他媒体',110,46);rTag.userData.t.needsUpdate=true;}
+// door highlight
+const doorRing=new T3.Mesh(new T3.RingGeometry(.9,1.15,32),new T3.MeshBasicMaterial({color:'#f09000',transparent:true,opacity:.9}));doorRing.rotation.x=-Math.PI/2;doorRing.position.y=.08;doorRing.visible=false;scene.add(doorRing);
+
+// pedestrians
+const peds=[];
+function pedTarget(){const h=G.time/60;let n=20;if(h<10)n=24;else if(h>=11.5&&h<13.5)n=36;else if(h>=17)n=34;return Math.round(n*(G.rain?.65:1));}
+function pedWeight(x,y){
+  const h=G.time/60,a=area(x),arc=y===6&&x<=17;let w=1;
+  if(h<10)w=y<=3?3:.8;
+  else if(h>=11.5&&h<13.5)w=a==='east'?.4:arc?3:1.8;
+  else if(h>=17)w=a==='east'?3:arc?1.5:.6;
+  else w=arc?2.2:1;
+  return w;
+}
+function pedPoint(tx,ty,d,side){
+  const g=grid[ty][tx];let off=g.t==='park'?rnd(-1,1):g.arcade?side*rnd(.6,1.6):side*1.5;
+  return {x:wx(tx)+(-d[1])*off,z:wz(ty)+d[0]*off};
+}
+function spawnPed(far){
+  for(let i=0;i<40;i++){
+    const x=ri(0,COLS-1),y=ri(1,ROWS-1);
+    if(!isWalk(x,y))continue;
+    if(Math.random()*3>pedWeight(x,y))continue;
+    if(far&&Math.hypot(wx(x)-G.x,wz(y)-G.z)<14)continue;
+    const d=pick(DIRS.filter(([dx,dy])=>isWalk(x+dx,y+dy)));if(!d)continue;
+    const office=Math.random()<(G.time<10*60||(G.time>=11.5*60&&G.time<13.5*60)?.5:.2);
+    const g=person(office?{shirt:'#f8f9fa',pants:pick(['#22223b','#2f3e46','#3d405b']),arm:pick(['#f8f9fa','#2f3e46']),tie:Math.random()<.5?pick(['#1d3557','#c1121f','#2a9d8f']):null,bag:Math.random()<.5}:{});
+    const side=Math.random()<.5?1:-1,p=pedPoint(x,y,d,side);
+    g.position.set(p.x,0,p.z);g.scale.setScalar(.01);
+    const q={g,tx:x,ty:y,d,side,tgt:p,speed:rnd(1.4,2.2)*(office?1.15:1),stop:0,grow:0,tipsy:area(x)==='east'&&G.time>=17.5*60&&Math.random()<.5};
+    g.userData.umb.visible=G.rain;peds.push(q);return;
+  }
+}
+function nextPedTile(p){
+  const [dx,dy]=p.d,opts=DIRS.filter(([ax,ay])=>isWalk(p.tx+ax,p.ty+ay)&&!(ax===-dx&&ay===-dy));
+  if(!isWalk(p.tx+dx,p.ty+dy)||(opts.length>1&&Math.random()<.3))p.d=opts.length?pick(opts):[-dx,-dy];
+  if(!isWalk(p.tx+p.d[0],p.ty+p.d[1]))p.d=[-p.d[0],-p.d[1]];
+  if(!isWalk(p.tx+p.d[0],p.ty+p.d[1]))return;
+  p.tx+=p.d[0];p.ty+=p.d[1];
+  if(Math.random()<.25)p.side=-p.side;
+  p.tgt=pedPoint(p.tx,p.ty,p.d,p.side);
+  if((grid[p.ty][p.tx].arcade||grid[p.ty][p.tx].t==='park')&&Math.random()<.12){p.stop=rnd(1.5,4);p.look=Math.random()*Math.PI*2;}
+}
+let spawnT=0;
+function updatePeds(dt){
+  spawnT-=dt;const tgt=pedTarget();
+  if(spawnT<=0){spawnT=.35;
+    if(peds.length<tgt)spawnPed(peds.length>8);
+    else if(peds.length>tgt+3){let fi=-1,fd=0;peds.forEach((p,i)=>{const d=Math.hypot(p.g.position.x-G.x,p.g.position.z-G.z);if(d>fd&&!p.leave){fd=d;fi=i;}});if(fi>=0)peds[fi].leave=true;}
+  }
+  for(let i=peds.length-1;i>=0;i--){
+    const p=peds[i],g=p.g;
+    if(p.leave){g.scale.multiplyScalar(Math.pow(.02,dt));if(g.scale.x<.05){scene.remove(g);peds.splice(i,1);}continue;}
+    if(p.grow<1){p.grow=Math.min(1,p.grow+dt*2.5);g.scale.setScalar(p.grow);}
+    g.userData.umb.visible=G.rain;
+    if(p.stop>0){p.stop-=dt;animIdle(g,dt,false);turnTo(g,p.look,dt,4);continue;}
+    const dx=p.tgt.x-g.position.x,dz=p.tgt.z-g.position.z,dist=Math.hypot(dx,dz);
+    let sp=p.speed*(G.rain?1.15:1);
+    const pd=Math.hypot(g.position.x-G.x,g.position.z-G.z);if(pd<.9)sp*=.3;
+    if(dist<.15){nextPedTile(p);continue;}
+    g.position.x+=dx/dist*sp*dt;g.position.z+=dz/dist*sp*dt;
+    turnTo(g,Math.atan2(dx,dz),dt);
+    animWalk(g,dt,sp);
+    if(p.tipsy)g.rotation.z=Math.sin(g.userData.phase*.5)*.08;
+  }
+}
+// chatting pairs & queues & shop staff
+const pairs=[];
+function placePair(pr){
+  const spots=[[8,2],[12,2],[14,2],[3,6],[10,6],[14,6],[22,6],[23,10],[26,10],[11,10],[2,10],[23,18]];
+  const [x,y]=pick(spots);const hz=ROAD_R.includes(y),off=(Math.random()<.5?1:-1)*1.6,along=rnd(-1.4,1.4);
+  const cx=wx(x)+(hz?along:off),cz=wz(y)+(hz?off:along);
+  pr.a.position.set(cx-.45*(hz?1:0),0,cz-.45*(hz?0:1));pr.b.position.set(cx+.45*(hz?1:0),0,cz+.45*(hz?0:1));
+  pr.a.rotation.y=Math.atan2(pr.b.position.x-pr.a.position.x,pr.b.position.z-pr.a.position.z);pr.b.rotation.y=pr.a.rotation.y+Math.PI;
+  pr.t=rnd(25,50);
+}
+for(let i=0;i<6;i++){const pr={a:person(),b:person(),t:0};placePair(pr);pairs.push(pr);}
+SHOPS.forEach(s=>{
+  const fx=s.door[0]-s.x,fz=s.door[1]-s.y,bx=wx(s.x)+fx*2.45,bz=wz(s.y)+fz*2.45;
+  s.queue=[0,1,2].map(i=>{const g=person();const along=1.05-i*.75;g.position.set(bx+(fz?along:0)+fx*.1*i,0,bz+(fx?along:0)+fz*.1*i);g.rotation.y=Math.atan2(-fx,-fz)+(i===1?.6:0);g.visible=false;return g;});
+  s.staff=person({apron:true,shirt:'#f2efe8',arm:'#f2efe8'});s.staff.position.set(bx-(fz?.9:0)+fx*.2,0,bz-(fx?.9:0)+fz*.2);s.staff.rotation.y=Math.atan2(fx,fz);s.staff.visible=false;
+});
+function updateCrowds(dt){
+  pairs.forEach(pr=>{pr.t-=dt;if(pr.t<=0&&Math.hypot(pr.a.position.x-G.x,pr.a.position.z-G.z)>16)placePair(pr);
+    const show=!G.rain||Math.random()<1;pr.a.visible=pr.b.visible=show;pr.a.userData.umb.visible=pr.b.userData.umb.visible=G.rain;
+    animIdle(pr.a,dt,true);animIdle(pr.b,dt,Math.sin(pr.a.userData.phase*.4)>0);});
+  SHOPS.forEach(s=>{const st=status(s,G.time);
+    const q=st.k==='peak';s.queue.forEach((g,i)=>{g.visible=q&&(i<2||s.seats>=30);if(g.visible){g.userData.umb.visible=G.rain;animIdle(g,dt,i===1);}});
+    s.staff.visible=st.k==='prep'&&!G.rain;if(s.staff.visible){const u=s.staff.userData;u.phase+=dt;u.armL.rotation.x=Math.sin(u.phase*3)*.5-.4;u.armR.rotation.x=Math.sin(u.phase*3)*.5-.4;}
+  });
+}
+// cars
+const cars=[];
+const CARC=['#f8f9fa','#1d3557','#c1121f','#adb5bd','#2a9d8f','#e9c46a','#343a40'];
+function makeCar(){
+  const g=new T3.Group(),c=pick(CARC);
+  const b=new T3.Mesh(box,M(c));b.scale.set(1.25,.6,2.5);b.position.y=.5;b.castShadow=true;g.add(b);
+  const cab=new T3.Mesh(box,M('#2b3442'));cab.scale.set(1.1,.5,1.3);cab.position.set(0,1.02,-.1);cab.castShadow=true;g.add(cab);
+  const hl=night(new T3.MeshBasicMaterial({color:'#fff7d6'}),0,1);
+  [-.42,.42].forEach(o=>{const l=new T3.Mesh(box,M('#fff3c4',{emissive:'#fff1b0',emissiveIntensity:0}));l.scale.set(.25,.14,.05);l.position.set(o,.55,1.26);g.add(l);nightMats.push({mat:l.material,d:0,n:1.2});});
+  const tl=new T3.Mesh(box,M('#a4161a',{emissive:'#ff2020',emissiveIntensity:0}));tl.scale.set(1.1,.12,.05);tl.position.set(0,.6,-1.26);g.add(tl);nightMats.push({mat:tl.material,d:0,n:.9});
+  scene.add(g);return g;
+}
+CAR_R.forEach(r=>[1,-1].forEach(dir=>{for(let k=0;k<1;k++)cars.push({g:makeCar(),h:true,line:r,dir,pos:rnd(0,W),v:0,max:rnd(5.5,7.5)});}));
+CAR_C.forEach(c=>[1,-1].forEach(dir=>cars.push({g:makeCar(),h:false,line:c,dir,pos:rnd(4,H),v:0,max:rnd(5.5,7.5)})));
+function carBlocked(c,ox,oz){
+  const lat=c.h?oz-wz(c.line):ox-wx(c.line),al=c.h?ox:oz,ahead=(al-c.pos)*c.dir;
+  return ahead>.5&&ahead<3.6&&Math.abs(lat)<1.25;
+}
+function updateCars(dt){
+  cars.forEach(c=>{
+    let block=carBlocked(c,G.x,G.z);
+    if(!block)for(const p of peds){if(carBlocked(c,p.g.position.x,p.g.position.z)){block=true;break;}}
+    if(!block)for(const o of cars){if(o!==c&&o.h===c.h&&o.line===c.line&&o.dir===c.dir){const a=(o.pos-c.pos)*c.dir;if(a>0&&a<4.2){block=true;break;}}}
+    const rp=rival.visible?rival.position:null;if(!block&&rp&&carBlocked(c,rp.x,rp.z))block=true;
+    c.v=lerp(c.v,block?0:c.max,Math.min(1,dt*(block?6:1.2)));
+    c.pos+=c.v*c.dir*dt;
+    const lim=c.h?W:H;if(c.pos>lim+6)c.pos=c.h?-6:2;if(c.pos<(c.h?-6:2))c.pos=lim+6;
+    if(c.h){c.g.position.set(c.pos,0,wz(c.line)-c.dir*.85);c.g.rotation.y=c.dir>0?Math.PI/2:-Math.PI/2;}
+    else{c.g.position.set(wx(c.line)+c.dir*.85,0,c.pos);c.g.rotation.y=c.dir>0?0:Math.PI;}
+  });
+}
+// train
+const train=new T3.Group();
+for(let i=0;i<4;i++){const car=new T3.Mesh(box,M('#f1f3f5'));car.scale.set(7.4,2.3,2.4);car.position.set(i*7.8,1.4,0);car.castShadow=true;train.add(car);
+  const st=new T3.Mesh(box,M('#f09000'));st.scale.set(7.45,.3,2.45);st.position.set(i*7.8,1.1,0);train.add(st);
+  const wn=new T3.Mesh(box,night(new T3.MeshLambertMaterial({color:'#5a6577',emissive:'#fff1c9',emissiveIntensity:0}),0,1));wn.scale.set(6.8,.7,2.46);wn.position.set(i*7.8,1.9,0);train.add(wn);}
+train.position.set(-60,0,wz(0));scene.add(train);let trainT=8,trainDir=1;
+function updateTrain(dt){
+  trainT-=dt;
+  if(trainT<=0){train.position.x+=trainDir*20*dt;
+    if((trainDir>0&&train.position.x>W+40)||(trainDir<0&&train.position.x<-70)){trainDir=-trainDir;trainT=rnd(20,40);}}
+}
+// rain
+const rainGeo=new T3.BufferGeometry();const RN=900;const rp=new Float32Array(RN*6);
+for(let i=0;i<RN;i++){const x=rnd(-30,30),y=rnd(0,26),z=rnd(-30,30);rp.set([x,y,z,x-.15,y-.9,z],i*6);}
+rainGeo.setAttribute('position',new T3.BufferAttribute(rp,3));
+const rainMesh=new T3.LineSegments(rainGeo,new T3.LineBasicMaterial({color:'#c9d6e8',transparent:true,opacity:.55}));rainMesh.visible=false;rainMesh.frustumCulled=false;scene.add(rainMesh);
+function setRain(on){rainMesh.visible=on;}
+function updateRain(dt){if(!rainMesh.visible)return;const a=rainGeo.attributes.position.array;for(let i=0;i<RN;i++){const o=i*6;a[o+1]-=dt*24;a[o+4]-=dt*24;if(a[o+4]<0){const y=26+Math.random()*4;a[o+1]=y;a[o+4]=y-.9;}}rainGeo.attributes.position.needsUpdate=true;rainMesh.position.set(G.x,0,G.z);}
+
+// ================= LIGHTING / SKY =================
+const SKY=[[9,'#cfe8ff',.95,'#fff6e8'],[12,'#a9d6ff',1.0,'#ffffff'],[15,'#bcd3f0',.9,'#fff1d6'],[16.5,'#f3c597',.7,'#ffc38a'],[17.4,'#d98a6c',.45,'#ff9a6a'],[18.1,'#454b80',.2,'#9aa6ff'],[19,'#1a1f3a',.12,'#7080d0']];
+const cA=new T3.Color(),cB=new T3.Color();
+function updateSky(){
+  const h=G.time/60;let i=0;while(i<SKY.length-2&&h>SKY[i+1][0])i++;
+  const a=SKY[i],b=SKY[i+1],t=clamp((h-a[0])/(b[0]-a[0]),0,1);
+  cA.set(a[1]).lerp(cB.set(b[1]),t);if(G.rain)cA.lerp(cB.set('#8f99a6'),.45);
+  scene.background=cA.clone();scene.fog.color.copy(cA);
+  const si=lerp(a[2],b[2],t)*(G.rain?.55:1);sun.intensity=si;sun.color.set(a[3]).lerp(cB.set(b[3]),t);
+  hemi.intensity=.35+si*.45;
+  const nt=clamp((h-17.2)/1.1,0,1);
+  nightMats.forEach(o=>{o.mat.emissiveIntensity=lerp(o.d,o.n,nt);});
+  const ang=lerp(-1.1,1.2,clamp((h-8)/11,0,1));
+  sun.position.set(G.x+Math.sin(ang)*40,30+Math.cos(ang)*18,G.z+18);sun.target.position.set(G.x,0,G.z);
+}
+
+// ================= CUTAWAY =================
+function occl(x,z){return z>G.z+1.2&&z<G.z+24&&Math.abs(x-G.x)<6.8;}
+function updateCutaway(dt){
+  const k=Math.min(1,dt*8),touched=new Set();
+  BLD.forEach(b=>{const tgt=occl(b.x,b.z)?Math.min(b.h,1.1):b.h;if(Math.abs(b.cur-tgt)>.01){b.cur=lerp(b.cur,tgt,k);
+    dummy.position.set(b.x,0,b.z);dummy.rotation.set(0,0,0);dummy.scale.set(b.s,b.cur,b.s);dummy.updateMatrix();b.m.setMatrixAt(b.i,dummy.matrix);touched.add(b.m);}});
+  touched.forEach(m=>m.instanceMatrix.needsUpdate=true);
+  BLD_EXTRA.forEach(b=>{const tgt=occl(b.x,b.z)?1.1:b.h;b.mesh.scale.y=lerp(b.mesh.scale.y,tgt,k);});
+  SHOPG.forEach(b=>{const tgt=occl(b.x,b.z)?.5:1;b.g.scale.y=lerp(b.g.scale.y,tgt,k);});
+}
+// ================= CAMERA / RESIZE =================
+let zoom=1;
+function resize(){const r=view.getBoundingClientRect();renderer.setSize(r.width,r.height,false);camera.aspect=r.width/Math.max(1,r.height);camera.updateProjectionMatrix();}
+new ResizeObserver(resize).observe(view);
+const camTarget=new T3.Vector3();
+function updateCamera(dt,snap){
+  const off=new T3.Vector3(0,19*zoom,12*zoom);camTarget.set(G.x,0,G.z);
+  const want=camTarget.clone().add(off);
+  if(snap)camera.position.copy(want);else camera.position.lerp(want,1-Math.exp(-dt*5));
+  camera.lookAt(G.x,1,G.z-1);
+}
+view.addEventListener('wheel',e=>{e.preventDefault();zoom=clamp(zoom*(e.deltaY>0?1.1:.9),.55,1.8);},{passive:false});
+$('#zin').onclick=()=>zoom=clamp(zoom*.85,.55,1.8);
+$('#zout').onclick=()=>zoom=clamp(zoom*1.18,.55,1.8);
+
+// ================= MINIMAP =================
+const mini=$('#mini'),mctx=mini.getContext('2d');let miniBase=null;
+function buildMiniBase(){
+  const c=document.createElement('canvas');c.width=560;c.height=400;const x=c.getContext('2d'),s=20;
+  x.fillStyle='#e9e4da';x.fillRect(0,0,560,400);
+  for(let ty=0;ty<ROWS;ty++)for(let tx=0;tx<COLS;tx++){
+    const g=grid[ty][tx],X=tx*s,Y=ty*s;
+    const col={road:g.arcade?'#e6c9a8':'#ffffff',bridge:'#ffffff',block:'#c8ccd2',rail:'#8b8680',station:'#b9b0a0',river:'#7fb2dc',park:'#a7d08c',shrine:'#d8cbb0',shop:'#c8ccd2',cafe:'#c8ccd2',conv:'#c8ccd2',office:'#8fa9c9'}[g.t]||'#c8ccd2';
+    x.fillStyle=col;x.fillRect(X,Y,s,s);
+  }
+  x.font=`900 15px ${JP_FONT}`;x.fillStyle='rgba(29,42,74,.55)';x.textAlign='center';
+  [['ひなた駅',12.5,1.6],['銀杏通り商店街',7,6.6],['のれん横丁',24,8.2],['公園',11.5,12.7],['神社',23.5,16.6],['西口オフィス街',4.5,16.9],['川',19.5,15.4]].forEach(([t,a,b])=>x.fillText(t,a*s,b*s));
+  x.font=`16px ${EMOJI_FONT}`;x.textBaseline='middle';
+  SPOTS.forEach(p=>x.fillText(p.icon,p.x*s+s/2,p.y*s+s/2));x.fillText('⛩️',23.5*s,16*s);
+  miniBase=c;
+}
+let miniBig=false;
+mini.addEventListener('click',()=>{miniBig=!miniBig;mini.classList.toggle('big',miniBig);});
+function drawMini(){
+  if(!miniBase)buildMiniBase();
+  const s=20;mctx.drawImage(miniBase,0,0);
+  peds.forEach(p=>{mctx.fillStyle='rgba(60,70,90,.55)';mctx.fillRect(p.g.position.x/TS*s-2,p.g.position.z/TS*s-2,4,4);});
+  cars.forEach(c=>{mctx.fillStyle='#59606b';mctx.fillRect(c.g.position.x/TS*s-3,c.g.position.z/TS*s-3,6,6);});
+  SHOPS.forEach(sh=>{const st=status(sh,G.time),X=sh.x*s+s/2,Y=sh.y*s+s/2;
+    mctx.beginPath();mctx.arc(X,Y,7,0,Math.PI*2);
+    mctx.fillStyle=st.k==='won'?'#f09000':st.k==='holiday'||st.k==='lost'?'#9aa1ab':'#ffffff';mctx.fill();
+    mctx.lineWidth=3;mctx.strokeStyle=st.k==='idle'?'#2f8f5b':st.k==='peak'?'#d6413a':st.k==='won'?'#b56d00':'#1d2a4a';mctx.stroke();
+    if(sh.carry>0&&!sh.won&&!sh.lost){mctx.beginPath();mctx.arc(X,Y,10,-Math.PI/2,-Math.PI/2+Math.PI*2*clamp(sh.carry/100,0,1));mctx.strokeStyle='#f09000';mctx.lineWidth=2.5;mctx.stroke();}
+  });
+  if(rival.visible){mctx.beginPath();mctx.arc(rival.position.x/TS*s,rival.position.z/TS*s,6,0,Math.PI*2);mctx.fillStyle='#e0263c';mctx.fill();mctx.strokeStyle='#fff';mctx.lineWidth=2;mctx.stroke();}
+  const px=G.x/TS*s,py=G.z/TS*s;mctx.save();mctx.translate(px,py);mctx.rotate(-player.rotation.y+Math.PI);
+  mctx.beginPath();mctx.moveTo(0,-11);mctx.lineTo(8,8);mctx.lineTo(0,4);mctx.lineTo(-8,8);mctx.closePath();mctx.fillStyle='#f09000';mctx.fill();mctx.strokeStyle='#1d2a4a';mctx.lineWidth=2;mctx.stroke();mctx.restore();
+  // view frame
+  const vw=11*zoom*s/TS*4,vh=8*zoom*s/TS*4;mctx.strokeStyle='rgba(29,42,74,.5)';mctx.lineWidth=1.5;mctx.strokeRect(px-vw/2,py-vh*.75,vw,vh);
+}
+
+// ================= PLAYER MOVEMENT =================
+const keys=new Set();let joy={x:0,y:0};
+addEventListener('keydown',e=>{
+  const k=e.key.toLowerCase();
+  if(['arrowup','arrowdown','arrowleft','arrowright','w','a','s','d'].includes(k)){if(G.mode==='play'){e.preventDefault();keys.add(k);}}
+  else if((k==='e'||k===' '||k==='enter')&&G.mode==='play'&&NEAR){e.preventDefault();interact();}
+  else if(k==='escape'&&G.mode==='shop'&&E)leaveShop();
+});
+addEventListener('keyup',e=>keys.delete(e.key.toLowerCase()));
+addEventListener('blur',()=>keys.clear());
+{const j=$('#joy'),kn=$('#knob');let id=null;
+ const set=(e)=>{const r=j.getBoundingClientRect();let dx=e.clientX-(r.left+r.width/2),dy=e.clientY-(r.top+r.height/2);const m=Math.hypot(dx,dy),lim=r.width/2-12;if(m>lim){dx*=lim/m;dy*=lim/m;}
+   kn.style.transform=`translate(${dx}px,${dy}px)`;joy={x:dx/lim,y:dy/lim};};
+ j.addEventListener('pointerdown',e=>{id=e.pointerId;j.setPointerCapture(id);set(e);});
+ j.addEventListener('pointermove',e=>{if(e.pointerId===id)set(e);});
+ const end=()=>{id=null;joy={x:0,y:0};kn.style.transform='';};
+ j.addEventListener('pointerup',end);j.addEventListener('pointercancel',end);}
+function canStand(x,z){const r=.38;return [[r,r],[-r,r],[r,-r],[-r,-r]].every(([a,b])=>isWalk(Math.floor((x+a)/TS),Math.floor((z+b)/TS)));}
+let walkedFor=0;
+function updatePlayer(dt){
+  let ix=0,iz=0;
+  if(G.mode==='play'){
+    if(keys.has('arrowleft')||keys.has('a'))ix-=1;if(keys.has('arrowright')||keys.has('d'))ix+=1;
+    if(keys.has('arrowup')||keys.has('w'))iz-=1;if(keys.has('arrowdown')||keys.has('s'))iz+=1;
+    if(Math.hypot(joy.x,joy.y)>.15){ix=joy.x;iz=joy.y;}
+  }
+  const m=Math.hypot(ix,iz);
+  if(m>.01){
+    ix/=Math.max(1,m);iz/=Math.max(1,m);
+    let sp=4.2*(G.rain?.78:1);if(G.stamina<20)sp*=.75;if(G.stamina<=0)sp*=.75;
+    let crowd=false;for(const p of peds){if(Math.abs(p.g.position.x-G.x)<.8&&Math.abs(p.g.position.z-G.z)<.8){crowd=true;break;}}
+    if(crowd)sp*=.6;
+    const nx=G.x+ix*sp*dt,nz=G.z+iz*sp*dt;
+    if(canStand(nx,nz)){G.x=nx;G.z=nz;}else if(canStand(nx,G.z))G.x=nx;else if(canStand(G.x,nz))G.z=nz;
+    const d=sp*dt*Math.min(1,m);G.stamina=clamp(G.stamina-d*(G.rain?.2:.125),0,100);
+    turnTo(player,Math.atan2(ix,iz),dt,12);animWalk(player,dt,sp);walkedFor+=dt;
+  } else animIdle(player,dt,false);
+  player.position.set(G.x,0,G.z);player.userData.umb.visible=G.rain;
+  pRing.position.set(G.x,.06,G.z);pArrow.position.set(G.x,2.55+Math.sin(performance.now()/300)*.12,G.z);
+  const an=areaName(Math.floor(G.x/TS),Math.floor(G.z/TS));
+  if(an!==G.areaName){G.areaName=an;if(G.mode==='play'){const b=$('#banner');b.textContent=an;b.classList.add('show');clearTimeout(b._t);b._t=setTimeout(()=>b.classList.remove('show'),1800);}}
+}
+let NEAR=null;
+function findNear(){let best=null,bd=2.6;INTER.forEach(i=>{const d=Math.hypot(i.px-G.x,i.pz-G.z);if(d<bd){bd=d;best=i;}});return best;}
+function interact(){
+  const n=NEAR;if(!n)return;keys.clear();joy={x:0,y:0};$('#knob').style.transform='';
+  if(n.kind==='shop')enterShop(n.ref);
+  else if(n.kind==='cafe')enterCafe();
+  else if(n.kind==='conv')enterConv();
+  else if(n.kind==='office')enterOffice();
+  else if(n.kind==='shrine')enterShrine();
+  else if(n.kind==='station')toast('ひなた駅。改札前は人の流れが絶えない');
+  renderAll();
+}
+$('#actBtn').onclick=()=>{if(G.mode==='play')interact();};
+
+// ================= PLACES =================
+function enterCafe(){if(G.stamina>=95){toast('まだ元気。カフェは後回しでいい');return;}pass(20);G.stamina=clamp(G.stamina+40,0,100);toast('☕ ひと休み。体力+40(20分)');}
+function enterConv(){if(G.stamina>=95){toast('コンビニ。今は特に用はない');return;}pass(5);G.stamina=clamp(G.stamina+15,0,100);toast('🏪 おにぎりと缶コーヒー。体力+15(5分)');}
+function enterShrine(){if(G.pray){toast('今日はもうお参りした');return;}G.pray=true;pass(5);toast('⛩️ お参りした。今日はクロージングが少し決まりやすい');}
+function enterOffice(){
+  G.mode='confirm';
+  card(`<h3>営業所</h3><p>いま ${fmtT(G.time)}。日報を書いて今日を締めますか?</p>${kpiTable(G.today)}
+  <div class="row"><button class="btn" id="bk">まだ回る</button><button class="btn pri" id="go">日報を書いて退勤</button></div>`);
+  $('#bk').onclick=()=>{G.mode='play';closeCard();};
+  $('#go').onclick=()=>{addLog('営業所に戻って日報を作成');endDay();};
+}
+function msgCard(title,body,btn='OK'){
+  G.mode='msg';
+  card(`<h3>${title}</h3>${body}<div class="row"><button class="btn pri full" id="ok">${btn}</button></div>`);
+  $('#ok').onclick=()=>{G.mode='play';closeCard();renderAll();checkEnd();};$('#ok').focus();
+}
+function enterShop(s){
+  const st=status(s,G.time),fn=fnm(s);
+  if(s.won){pass(3);toast(`${fn}さん「いつもありがとね!」(受注済)`);return;}
+  if(s.lost){pass(3);toast(`${fn}さん「ごめんね、他の媒体さんで決めちゃったんだ」`);return;}
+  if(st.k==='holiday'){pass(2);toast(`${s.name}はシャッターが下りている。今日は定休日(${WD[s.closed]}曜休み)`);return;}
+  if(s.refused){pass(3);toast('今日はもう相手にしてもらえない。日を改めよう');return;}
+  if(st.k==='peak'){
+    const lunch=G.time<14*60&&s.type!=='dinner';
+    G.mode='msg';
+    card(`<h3>${s.icon} ${s.name}</h3><p>店内は満席で、入口に行列ができている。${fn}さんは厨房で手が離せないようだ。</p>
+      ${lunch&&!G.ate?'<p class="note">客としてランチを食べれば、店の様子がわかって店主の印象も良くなる。</p>':''}
+      <div class="row">${lunch&&!G.ate?'<button class="btn pri" id="eat">客として食べる<small>30分・体力+30・信頼+1</small></button>':''}<button class="btn" id="ok">出直す</button></div>`);
+    $('#ok').onclick=()=>{pass(3);addLog(`${s.name}:ピーク帯のため出直し`);G.mode='play';closeCard();renderAll();checkEnd();};
+    const eat=$('#eat');if(eat)eat.onclick=()=>{G.ate=true;s.ate=true;s.trust=Math.min(3,s.trust+1);s.carry+=5;pass(30);G.stamina=clamp(G.stamina+30,0,100);
+      addLog(`${s.name}でランチ`);msgCard('ランチ',`<p>${s.genre}をいただいた。食べながら店内を観察すると…<b>${s.clue}</b>。</p><p class="note">会計のとき${fn}さんと目が合った。次に来たとき覚えていてくれそうだ。</p>`);};
+    $('#ok').focus();return;
+  }
+  G.today.visit++;
+  if(Math.random()<st.absent){pass(6);staffCard(s,st);return;}
+  const P=PERS[s.pers];
+  let start=Math.max(s.mood+st.mod+s.trust*4,s.carry)+ri(-4,4);
+  if(s.rivalToday)start-=5;if(G.stamina<=0)start-=10;
+  const bossHere=!s.boss||s.boss.days.includes(G.day-1);
+  E={s,st,interest:clamp(start,0,90),turns:Math.max(3,4+(st.k==='idle'?1:0)+P.turns),proposed:null,matched:false,meet:false,over:false,
+     objection:null,dataShown:false,chats:0,bossHere,speaker:`${fn}さん`,line:greet(s,st)};
+  s.met=true;G.mode='shop';pass(2);renderShop();
+}
+function greet(s,st){
+  let l;
+  if(!s.met)l=s.intro;
+  else if(s.ate){l='あ、この前食べに来てくれた人だよね!どうだった?';s.ate=false;}
+  else if(s.refusedBefore){l='この前断ったよね…まあ、話くらいは聞くけど';s.refusedBefore=false;}
+  else if(s.carry>=45)l='この前の話、ちょっと考えてたんだよ';
+  else if(st.k==='idle')l='ちょうど手が空いたところ。どうぞ';
+  else l='はいはい、手短にお願いね';
+  if(s.wrongProp)l+=`(${PRODUCTS[s.wrongProp].name}の話はもういいからね)`;
+  if(s.rivalToday)l+=' …そういえば、さっき別の媒体の人も来てたよ';
+  return l;
+}
+function staffCard(s,st){
+  const fn=fnm(s),hints=[{t:`${fn}さんはだいたい${bestTime(s)}なら店にいますよ`,f:()=>{}}];
+  if(!s.topicKnown)hints.push({t:`${fn}さん、${TOPICS[s.topic]}の話になると止まらないんですよ(笑)`,f:()=>{s.topicKnown=true;}});
+  if(s.boss&&!s.bossKnown)hints.push({t:`お金のことを決めるのは${s.boss.who}で、${s.boss.days.map(d=>WD[d]).join('・')}曜に来ます`,f:()=>{s.bossKnown=true;}});
+  if(!s.needKnown&&Math.random()<.5)hints.push({t:`最近${fn}さん、「${PRODUCTS[s.need].issue}」ってよくぼやいてます`,f:()=>{s.needKnown=true;}});
+  const h=pick(hints);h.f();s.carry+=3;
+  addLog(`${s.name}:店主不在。スタッフから情報`);
+  msgCard(`${s.icon} ${s.name}`,`<p>${fn}さんは不在。${st.k==='closed'?'夜営業の準備でまだ来ていないらしい。':''}アルバイトの子が対応してくれた。</p>
+    <div class="bubble"><span class="sp">アルバイト</span>${h.t}</div><p class="note">名刺を渡しておいた。(訪問+1・見込み度+3)</p>`);
+}
+function dataLine(s){
+  const n={予約:Math.round(s.seats*.6),集客:Math.round(s.seats*3.5),求人:ri(3,6)}[s.need];
+  return {予約:`電話に出られないピーク中の予約、試算では月${n}件ほど取りこぼしています`,
+          集客:`この立地と席数だと、平日夜に月${n}席分の空席が出ている計算です`,
+          求人:`この周辺の飲食求人は、条件を合わせれば月${n}件ほど応募が見込めます`}[s.need];
+}
+function act(kind,arg){
+  if(!E||E.over||E.turns<=0)return;
+  const s=E.s,P=PERS[s.pers],fn=fnm(s);
+  E.turns--;pass(10);G.stamina=clamp(G.stamina-3,0,100);E.speaker=`${fn}さん`;
+  if(kind==='chat'){
+    E.chats++;
+    if(E.chats>=2&&(s.pers==='数字派'||s.pers==='職人気質')){E.interest-=5;E.line='…で、今日は何の用?';}
+    else if(arg===s.topic){E.interest+=Math.round(14*P.chat);s.trust=Math.min(3,s.trust+2);s.topicKnown=true;E.line=TOPIC_LINE[arg];}
+    else{E.interest+=Math.round(4*P.chat);s.trust=Math.min(3,s.trust+1);E.line=`へえ、${TOPICS[arg]}ねえ。(あまり興味はなさそうだ)`;}
+  }
+  else if(kind==='hear'){
+    if(s.needKnown){E.interest+=6;E.line='前にも言ったけど、'+NEED_LINE[s.need];}
+    else if(s.trust>=(s.pers==='職人気質'?2:1)||Math.random()<.25){s.needKnown=true;E.interest+=8;E.line=NEED_LINE[s.need];}
+    else{E.interest+=2;s.trust=Math.min(3,s.trust+1);E.line='うーん、まあぼちぼちかな。(まだ本音は話してくれない)';}
+  }
+  else if(kind==='data'){
+    E.dataShown=true;E.interest+=Math.round(16*P.data);
+    E.speaker='あなた';E.line=dataLine(s)+(s.pers==='数字派'?'\n— 根拠を見せたら、身を乗り出してきた':'\n— 「へえ、そんなに?」と少し驚いている');
+  }
+  else if(kind==='prop'){
+    if(s.pers==='職人気質'&&s.trust<2){E.interest-=5;E.line='まだあんたに店のことを任せる気にはならないな';}
+    else{
+      if(!E.meet){E.meet=true;G.today.meet++;}
+      E.proposed=arg;
+      if(arg===s.need){E.matched=true;s.wrongProp=null;E.interest+=s.needKnown?22+s.trust*6:14+s.trust*4;
+        E.line=s.needKnown?'それ、まさに困ってたところだよ。詳しく聞かせて':'へえ、それはちょっと気になるかも';}
+      else{E.matched=false;s.wrongProp=arg;E.interest-=10;E.line='うちはそこは間に合ってるかな…';}
+    }
+  }
+  else if(kind==='resp'){
+    if(RESP[arg]&&OBJ[E.objection].ok===arg){E.interest+=15;s.objCleared=true;E.line=RESP[arg].ok;E.objection=null;}
+    else{E.interest-=12;E.line='いや、そういう話じゃなくてさ…';}
+  }
+  else if(kind==='close'){
+    if(!E.bossHere){s.bossKnown=true;E.line=`いいとは思うんだけど、決めるのは${s.boss.who}なんだよね。${s.boss.days.map(d=>WD[d]).join('・')}曜にいるから、その時にもう一回来てくれる?`;}
+    else if(!s.objCleared&&(s.pers==='慎重派'||Math.random()<.6)){E.objection=s.obj;E.line=OBJ[s.obj].line(yen(amount(E.proposed,s)));}
+    else{
+      const p=clamp(E.interest/100*(E.matched?1:.35)*P.close*(G.pray?1.1:1),0,.92);
+      if(Math.random()<p){
+        const a=amount(E.proposed,s);s.won=true;s.carry=0;G.today.win++;G.today.sales+=a;E.over=true;
+        E.line=`わかった、やってみよう!申込書ちょうだい。\n— ${PRODUCTS[E.proposed].name} ${yen(a)}/月で受注`;
+        addLog(`🎉 ${s.name}:${PRODUCTS[E.proposed].name}で受注 ${yen(a)}`);
+      } else {
+        E.interest-=15;
+        if(E.interest<15){s.refused=true;s.carry=Math.max(0,s.carry-10);E.over=true;E.line='悪いけど、今回は見送りで。';addLog(`${s.name}:クロージング失敗。今日は断られた`);}
+        else E.line='うーん…もうちょっと考えさせて。';
+      }
+    }
+  }
+  E.interest=clamp(E.interest,0,100);
+  if(!E.over&&E.turns<=0)E.line+=' …ごめん、そろそろ戻らなきゃ。';
+  renderHUD();renderShop();
+}
+function leaveShop(){
+  const s=E.s;
+  if(!s.won&&!s.refused){s.carry=Math.round(E.interest*.85);addLog(`${s.name}:見込み度${s.carry}で出直し`);}
+  E=null;G.mode='play';closeCard();renderAll();checkEnd();
+}
+function renderShop(menu){
+  const s=E.s,st=E.st,P=PERS[s.pers],canAct=!E.over&&E.turns>0;
+  const dis=c=>canAct&&c?'':'disabled';
+  let btns;
+  if(menu==='prop')btns=Object.keys(PRODUCTS).map(k=>`<button class="btn" data-p="${k}">${PRODUCTS[k].name}<small>${yen(amount(k,s))}/月</small></button>`).join('')+`<button class="btn" id="back">戻る</button>`;
+  else if(menu==='chat')btns=Object.keys(TOPICS).map(k=>`<button class="btn" data-t="${k}">${TOPICS[k]}${s.topicKnown&&k===s.topic?' ★':''}</button>`).join('')+`<button class="btn" id="back">戻る</button>`;
+  else if(E.objection&&canAct)btns=Object.keys(RESP).map(k=>`<button class="btn" data-r="${k}">${RESP[k].label}<small>${RESP[k].sub}</small></button>`).join('')+`<button class="btn full" id="leave">出直す(見込みを持ち越す)</button>`;
+  else btns=`<button class="btn" data-a="chat" ${dis(true)}>雑談する</button>
+      <button class="btn" data-a="hear" ${dis(true)}>ヒアリング</button>
+      <button class="btn" data-a="data" ${dis(s.needKnown&&!E.dataShown)}>データを見せる<small>${s.needKnown?(E.dataShown?'提示済み':'機会損失の試算'):'課題が分かってから'}</small></button>
+      <button class="btn" data-a="prop" ${dis(true)}>提案する</button>
+      <button class="btn pri full" data-a="close" ${dis(E.proposed)}>クロージング</button>
+      <button class="btn full" id="leave">${E.over||E.turns<=0?'店を出る':'出直す(見込みを持ち越す)'}</button>`;
+  card(`<div class="shophead"><div class="ic">${s.icon}</div><div><h3>${s.name}</h3>
+    <div class="muted">${s.genre}/${s.seats}席 <span class="tag ${st.k}">${st.label} ${st.mark}</span></div></div></div>
+    <div class="who">
+      <div>店主:${s.owner}さん(${s.age})</div>
+      <div>印象:${s.trust>0||E.chats>0||s.needKnown?`${s.pers}。${P.desc}`:'まだよくわからない'}</div>
+      <div>店内の様子:${s.clue}</div>
+      ${s.boss?`<div>決裁者:${s.bossKnown?`${s.boss.who}(${s.boss.days.map(d=>WD[d]).join('・')}曜に来店)${E.bossHere?' — 今日いる':' — 今日はいない'}`:'?'}</div>`:''}
+    </div>
+    <div class="bubble"><span class="sp">${E.speaker}</span>${E.line.replace(/\n/g,'<br>')}</div>
+    <div class="meters">
+      <span>見込み度</span><span class="bar"><i style="width:${E.interest}%"></i></span><span>${Math.round(E.interest)}</span>
+      <span>信頼</span><span class="pips">${'●'.repeat(s.trust)}${'○'.repeat(3-s.trust)}</span><span></span>
+      <span>課題</span><span>${s.needKnown?PRODUCTS[s.need].issue:'???(ヒアリングで判明)'}</span><span></span>
+      <span>残り</span><span>${'▮'.repeat(Math.max(0,E.turns))}<span class="muted"> (1手=10分)</span></span><span></span>
+    </div>
+    ${E.proposed?`<p class="note">提案中:${PRODUCTS[E.proposed].name}${E.matched?'(刺さっている)':'(ズレている)'}</p>`:''}
+    ${E.objection&&canAct?'<p class="note">懸念を出された。どう返す?</p>':''}
+    <div class="row">${btns}</div>`);
+  document.querySelectorAll('#card [data-a]').forEach(b=>b.onclick=()=>{const a=b.dataset.a;if(a==='prop'||a==='chat')renderShop(a);else act(a);});
+  document.querySelectorAll('#card [data-p]').forEach(b=>b.onclick=()=>act('prop',b.dataset.p));
+  document.querySelectorAll('#card [data-t]').forEach(b=>b.onclick=()=>act('chat',b.dataset.t));
+  document.querySelectorAll('#card [data-r]').forEach(b=>b.onclick=()=>act('resp',b.dataset.r));
+  const back=$('#back');if(back)back.onclick=()=>renderShop();
+  const lv=$('#leave');if(lv)lv.onclick=leaveShop;
+  const f=$('#card button:not([disabled])');if(f)f.focus({preventScroll:true});
+}
+
+// ================= DAY FLOW =================
+function checkEnd(){if(G.mode==='play'&&G.time>=END){G.time=END;addLog('19:00。今日はここまで');endDay();}}
+function kpiTable(k){
+  return `<table><tr><th>KPI</th><th>実績</th><th>目標</th><th></th></tr>${Object.keys(TARGET).map(key=>{
+    const ok=k[key]>=TARGET[key];const v=key==='sales'?yen(k[key]):k[key];const t=key==='sales'?yen(TARGET[key]):TARGET[key];
+    return `<tr><td>${KPI_LABEL[key]}</td><td>${v}</td><td>${t}</td><td class="${ok?'ok':'ng'}">${ok?'達成':'未達'}</td></tr>`;}).join('')}</table>`;
+}
+function endDay(){
+  G.mode='report';E=null;
+  Object.keys(G.total).forEach(k=>G.total[k]+=G.today[k]);
+  const hit=Object.keys(TARGET).filter(k=>G.today[k]>=TARGET[k]).length;
+  const boss=['…まず訪問数を作ろう。動かないと何も始まらない','動けてはいる。行く時間帯と順番を見直そう','半分達成。アイドルタイムを狙えばもう一段いける','惜しい!あと一つ','全KPI達成。完璧な一日だ'][hit];
+  const last=G.day>=DAYS;
+  card(`<h3>${dateStr()} 日報</h3>${kpiTable(G.today)}
+    ${G.news.length?`<p class="note">⚠ ${G.news.join('/')}</p>`:''}
+    <div class="slack"><b>上司</b>:${boss}</div>
+    <div class="row"><button class="btn pri full" id="nx">${last?'週次の評価を見る':'翌日へ'}</button></div>`);
+  $('#nx').onclick=()=>{if(last)showFinal();else{G.day++;startDay();}};
+  $('#nx').focus();renderAll();
+}
+function showMorning(){
+  G.mode='morning';
+  const hol=SHOPS.filter(s=>s.closed===G.day-1).map(s=>s.name);
+  card(`<h3>${dateStr()} 朝</h3>
+    <p>天気:<b>${G.rain?'☔ 雨(歩くのが遅い・人通り少なめ)':'☀️ 晴れ'}</b></p>
+    <p class="note">今日の定休日:${hol.length?hol.join('、'):'なし'}</p>
+    <div class="slack"><b>上司からのSlack</b><br>${G.hint}</div>
+    <p class="note">今日の目標:訪問${TARGET.visit}/商談${TARGET.meet}/受注${TARGET.win}/売上${yen(TARGET.sales)}</p>
+    <div class="row"><button class="btn" id="ls">顧客リストを見る</button><button class="btn pri" id="go">外回りに出る</button></div>`);
+  $('#go').onclick=()=>{G.mode='play';closeCard();renderAll();};
+  $('#ls').onclick=()=>showList(showMorning);
+  $('#go').focus();renderAll();
+}
+function showList(back){
+  const prev=G.mode;G.mode='list';
+  const rows=SHOPS.map(s=>{
+    const state=s.won?'<span class="tag idle">受注</span>':s.lost?'<span class="tag lost">他社</span>':s.refused?'<span class="tag peak">本日NG</span>':s.met?'商談中':'未接触';
+    return `<tr><td>${s.icon} ${s.name}<br><span class="muted">${s.owner}さん/${s.met?s.pers:'?'}</span></td><td>${areaName(s.x,s.y)}</td><td>${s.closed>=0?WD[s.closed]:'なし'}</td><td>${s.type==='lunch'?'昼中心':s.type==='dinner'?'夜のみ':'昼夜'}</td><td>${s.won?'—':s.carry}</td><td>${s.needKnown?PRODUCTS[s.need].issue:'?'}</td><td>${s.topicKnown?TOPICS[s.topic]:'?'}</td><td>${state}</td></tr>`;}).join('');
+  card(`<h3>顧客リスト</h3><p class="note">訪問やSlack、スタッフの話でわかったことが埋まっていく。</p>
+    <div class="tblwrap"><table class="list"><tr><th>店舗/店主</th><th>エリア</th><th>定休</th><th>営業</th><th>見込み</th><th>課題</th><th>好きな話題</th><th>状態</th></tr>${rows}</table></div>
+    <div class="row"><button class="btn pri full" id="cl">閉じる</button></div>`);
+  cardEl.classList.add('wide');
+  $('#cl').onclick=()=>{cardEl.classList.remove('wide');if(back)back();else{G.mode=prev==='list'?'play':prev;closeCard();}};$('#cl').focus();
+}
+function showFinal(){
+  G.mode='final';
+  const Wk={visit:TARGET.visit*DAYS,meet:TARGET.meet*DAYS,win:TARGET.win*DAYS,sales:TARGET.sales*DAYS};
+  const rate=Object.keys(Wk).reduce((a,k)=>a+Math.min(G.total[k]/Wk[k],1.5),0)/4;
+  const rank=rate>=1.1?'S':rate>=.9?'A':rate>=.7?'B':'C';
+  const msg={S:'部長賞。来期のエース候補だ',A:'目標達成。いい一週間だった',B:'あと一歩。回る順番と時間帯を見直そう',C:'まずは訪問数から。動けば数字はついてくる'}[rank];
+  const lost=SHOPS.filter(s=>s.lost).length;
+  let best=null;try{best=JSON.parse(localStorage.getItem('kpidash3d-best')||'null');}catch(e){}
+  const isBest=!best||rate>best.rate;
+  if(isBest){try{localStorage.setItem('kpidash3d-best',JSON.stringify({rate,rank,sales:G.total.sales}));}catch(e){}}
+  const rows=Object.keys(Wk).map(k=>{const ok=G.total[k]>=Wk[k];return `<tr><td>${KPI_LABEL[k]}</td><td>${k==='sales'?yen(G.total[k]):G.total[k]}</td><td>${k==='sales'?yen(Wk[k]):Wk[k]}</td><td class="${ok?'ok':'ng'}">${ok?'達成':'未達'}</td></tr>`;}).join('');
+  card(`<h3>週次評価</h3><div class="rank">${rank}</div><p>達成率 ${Math.round(rate*100)}%(各KPI上限150%で平均)</p>
+    <table><tr><th>KPI</th><th>実績</th><th>週目標</th><th></th></tr>${rows}</table>
+    ${lost?`<p class="note">他媒体に取られた店:${lost}軒</p>`:''}
+    <div class="slack"><b>部長</b>:${msg}</div>
+    <p class="note">${isBest?'自己ベスト更新!':`自己ベスト:${best.rank}(${Math.round(best.rate*100)}%)`}</p>
+    <div class="row"><button class="btn pri full" id="re">もう一週やる</button></div>`);
+  $('#re').onclick=()=>{newGame();startDay();};$('#re').focus();
+}
+function showTitle(){
+  card(`<h3>KPIダッシュ!街まわり営業</h3>
+    <p>担当エリアは「ひなた駅」周辺。月曜から金曜の5日間で、飲食店を回ってKPIを積み上げよう。</p>
+    <ul class="rules">
+      <li><b>時間は流れ続ける</b>(1秒=2分)。9:00〜19:00、商談は1手10分</li>
+      <li><b>時間帯</b>:ランチ・ディナーのピーク中は門前払い。14〜17時のアイドルタイムが狙い目。夜営業の店は午前中、店主がまだ来ていない</li>
+      <li><b>人を見る</b>:店主ごとに性格と好きな話題がある。店内の様子、スタッフの話、朝のSlackがヒント</li>
+      <li><b>商談</b>:雑談で信頼 → ヒアリングで課題 → データで機会損失 → 合う商材を提案 → 懸念に答えてクロージング</li>
+      <li><b>決裁者</b>:店長に決める権限がない店もある。決裁者が来る曜日を狙う</li>
+      <li><b>街</b>:他媒体の営業(赤い札)も回っている。見込みの薄い店は取られることがある</li>
+      <li>右上のMAPで全体を確認。☕カフェ・🏪コンビニで回復、🏢営業所で日報を出して退勤</li>
+    </ul>
+    <p class="note">街・店名・人物・価格はすべて架空です。</p>
+    <div class="row"><button class="btn pri full" id="go">出社する</button></div>`);
+  $('#go').onclick=startDay;$('#go').focus();
+}
+
+// ================= UI =================
+const ov=$('#ov'),cardEl=$('#card');
+function card(html){cardEl.classList.remove('wide');cardEl.innerHTML=html;ov.hidden=false;keys.clear();}
+function closeCard(){ov.hidden=true;cardEl.innerHTML='';}
+let tt;function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),2600);addLog(m);}
+let lastClock='';
+function renderHUD(){
+  $('#date').textContent=dateStr();
+  $('#weather').textContent=G.rain?'☔ 雨':'☀️ 晴れ';
+  $('#kpis').innerHTML=Object.keys(TARGET).map(k=>{const v=G.today[k],t=TARGET[k];
+    return `<div class="kpi ${v>=t?'done':''}"><span>${KPI_LABEL[k]}</span><span class="bar"><i style="width:${clamp(v/t*100,0,100)}%"></i></span><span>${k==='sales'?yen(v):v+'/'+t}</span></div>`;}).join('');
+  renderNear();
+}
+function renderTick(){
+  const c=fmtT(Math.min(G.time,END));if(c!==lastClock){lastClock=c;$('#clock').textContent=c;}
+  const sb=$('#stambar');sb.firstElementChild.style.width=G.stamina+'%';sb.classList.toggle('low',G.stamina<20);
+}
+function renderNear(){
+  const a=NEAR,el=$('#near');
+  const rp=rival.visible?rival.position:null;
+  const rivalNear=rp&&Math.hypot(rp.x-G.x,rp.z-G.z)<3?'<p class="note">他媒体の営業とすれ違った。軽く会釈された。</p>':'';
+  if(!a){el.innerHTML=`<h2>周辺</h2><p class="muted">お店の入口に近づくと、ここに店舗情報が出ます。</p>${rivalNear}`;return;}
+  const simple={cafe:[`☕ ${a.ref.name}`,'入ると20分休んで体力+40'],conv:['🏪 コンビニ','入ると5分で体力+15'],office:['🏢 営業所','入ると日報を書いて退勤できる'],
+    shrine:['⛩️ ひなた神社',G.pray?'今日はお参り済み':'お参りするとクロージングが少し決まりやすくなる(1日1回)'],station:['🚉 ひなた駅','朝は通勤客、昼は買い物客で人通りが多い']};
+  if(simple[a.kind]){el.innerHTML=`<h2>周辺</h2><div class="nm">${simple[a.kind][0]}</div><p class="muted">${simple[a.kind][1]}</p>${rivalNear}`;return;}
+  const s=a.ref,st=status(s,G.time);
+  el.innerHTML=`<h2>周辺</h2><div class="nm">${s.icon} ${s.name}</div>
+    <div class="muted">${s.genre}/${s.seats}席/定休:${s.closed>=0?WD[s.closed]+'曜':'なし'}</div>
+    <div class="muted">店主:${s.owner}さん(${s.age})${s.met?`/${s.pers}`:''}</div>
+    <div><span class="tag ${st.k==='won'?'idle':st.k}">${st.label} ${st.mark}</span>${s.refused?'<span class="tag peak">本日お断り</span>':''}${s.rivalToday&&!s.won&&!s.lost?'<span class="tag peak">他社訪問あり</span>':''}</div>
+    ${s.won||s.lost?'':`<div class="muted">見込み度 ${s.carry}/課題 ${s.needKnown?PRODUCTS[s.need].issue:'?'}/話題 ${s.topicKnown?TOPICS[s.topic]:'?'}</div>`}${rivalNear}`;
+}
+function renderLog(){$('#log').innerHTML=G.log.slice(0,14).map(l=>`<li><time>${fmtT(l.t)}</time>${l.text}</li>`).join('');}
+function renderAll(){renderHUD();renderLog();renderTick();}
+$('#listBtn').onclick=()=>{if(G.mode==='play')showList();};
+
+// ================= MAIN LOOP =================
+let last=performance.now(),nearKey='',slowT=0;
+function frame(now){
+  const dt=Math.min(.05,(now-last)/1000);last=now;
+  if(G.mode==='play'){const gm=dt*TIME_SCALE;G.time+=gm;rivalAdvance(gm);}
+  updatePlayer(dt);updatePeds(dt);updateCrowds(dt);updateCars(dt);updateTrain(dt);updateRain(dt);
+  // rival visual
+  const rp=rivalPos(),vis=!!rp&&G.time>=600&&G.time<=18.5*60&&R.busy<=0;
+  rival.visible=vis;rTag.visible=vis;
+  if(vis){const moving=R.path.length>0;rival.position.set(rp.x+.9,0,rp.z+.9);if(moving){turnTo(rival,Math.atan2(rp.dx,rp.dz),dt);animWalk(rival,dt,3);}else animIdle(rival,dt,false);
+    rival.userData.umb.visible=G.rain;rTag.position.set(rival.position.x,2.75,rival.position.z);}
+  waterTex.offset.y-=dt*.08;
+  fw.scale.setScalar(1+Math.sin(now/400)*.03);
+  // near
+  NEAR=G.mode==='play'?findNear():null;
+  const nk=NEAR?NEAR.kind+NEAR.tx+','+NEAR.ty:'';
+  if(nk!==nearKey){nearKey=nk;renderNear();const b=$('#actBtn');
+    if(NEAR){b.hidden=false;b.textContent=`${NEAR.ref.icon} ${NEAR.ref.name}に入る`+(matchMedia('(pointer:coarse)').matches?'':' [E]');doorRing.visible=true;doorRing.position.set(NEAR.px,.08,NEAR.pz);}
+    else{b.hidden=true;doorRing.visible=false;}}
+  if(doorRing.visible)doorRing.scale.setScalar(1+Math.sin(now/250)*.08);
+  slowT-=dt;if(slowT<=0){slowT=.5;refreshSigns();if(NEAR)renderNear();}
+  updateCutaway(dt);updateSky();updateCamera(dt);renderTick();
+  if(G.mode==='play')checkEnd();
+  drawMini();
+  renderer.render(scene,camera);
+  requestAnimationFrame(frame);
+}
+
+newGame();resize();
+for(let i=0;i<22;i++)spawnPed(false);
+peds.forEach(p=>{p.grow=1;p.g.scale.setScalar(1);});
+refreshSigns();updateCutaway(1);updateCamera(0,true);renderAll();showTitle();
+requestAnimationFrame(frame);
+if(document.fonts)document.fonts.ready.then(()=>{SHOPS.forEach(s=>s.signKey='');refreshSigns();buildMiniBase();});
+})();
+</script>
+</body>
+</html>
