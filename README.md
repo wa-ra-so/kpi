@@ -3,7 +3,7 @@
 飲食店への外回り営業を5日間シミュレーションする3Dゲーム。訪問・商談・受注・売上のKPI達成を目指す。
 
 - 公開URL: https://wa-ra-so.github.io/kpi/
-- `main` へ push すると GitHub Actions(`.github/workflows/pages.yml`)で自動デプロイ
+- GitHub Pages は「Deploy from a branch: main / (root)」で公開。`main` に入ると数分で反映される
 - スマホではブラウザの「ホーム画面に追加」でアプリとして使える(PWA)
 
 ## ファイル構成
