@@ -1,0 +1,17 @@
+{
+  "name": "KPIダッシュ!街まわり営業",
+  "short_name": "KPIダッシュ",
+  "description": "飲食店への外回り営業を5日間シミュレーションする3Dゲーム",
+  "lang": "ja",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#1d2a4a",
+  "theme_color": "#1d2a4a",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

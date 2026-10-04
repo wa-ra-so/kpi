@@ -1,0 +1,2102 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>KPIダッシュ!街まわり営業</title>
+<meta name="theme-color" content="#1d2a4a">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="KPIダッシュ">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🧑‍💼</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&family=Zen+Kaku+Gothic+New:wght@400;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#eef3f6; --grid:#dae3ea; --ink:#1d2a4a; --ink-soft:#56627c; --block-line:#8fa1b3;
+  --orange:#f09000; --orange-soft:#ffe2b0; --red:#d6413a; --green:#2f8f5b; --panel:#ffffff; --on-orange:#1d2a4a;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --paper:#131a29; --grid:#1d273b; --ink:#e7ecf5; --ink-soft:#9aa6bf; --block-line:#4a5c80;
+    --orange:#ffa31a; --orange-soft:#4a3410; --red:#ff6b61; --green:#5cc98a; --panel:#1a2336; --on-orange:#131a29;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#131a29; --grid:#1d273b; --ink:#e7ecf5; --ink-soft:#9aa6bf; --block-line:#4a5c80;
+  --orange:#ffa31a; --orange-soft:#4a3410; --red:#ff6b61; --green:#5cc98a; --panel:#1a2336; --on-orange:#131a29;
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:inherit}
+html,body{margin:0;background:var(--paper);color:var(--ink)}
+body{font-family:"Zen Kaku Gothic New","Hiragino Sans","Meiryo",system-ui,sans-serif;font-size:15px;line-height:1.55;-webkit-tap-highlight-color:transparent}
+.app{max-width:1320px;margin:0 auto;padding:10px;display:grid;gap:10px;grid-template-columns:minmax(0,1fr);grid-template-areas:"hud" "view" "side"}
+@media (min-width:900px){.app{grid-template-columns:minmax(0,1fr) 310px;grid-template-areas:"hud hud" "view side";padding:14px 16px}}
+.hud{grid-area:hud;display:flex;flex-wrap:wrap;align-items:center;gap:6px 18px;border-bottom:2px solid var(--ink);padding-bottom:8px}
+.hud h1{font-family:"DotGothic16",sans-serif;font-weight:400;font-size:1.3rem;margin:0;margin-right:auto}
+.clock{font-family:"DotGothic16",sans-serif;font-size:1.9rem;line-height:1}
+.chip{font-size:.88rem;color:var(--ink-soft)}
+.stam{display:flex;align-items:center;gap:6px;font-size:.85rem}
+.bar{position:relative;height:10px;border:2px solid var(--ink);border-radius:3px;background:var(--panel);overflow:hidden;display:block}
+.bar>i{position:absolute;inset:0 auto 0 0;background:var(--orange);transition:width .25s}
+.stam .bar{width:110px}
+.stam .bar.low>i{background:var(--red)}
+
+#view{grid-area:view;position:relative;min-width:0;height:62vh;min-height:360px;border:2px solid var(--ink);border-radius:8px;overflow:hidden;background:#9fc6e8;touch-action:none}
+@media (min-width:900px){#view{height:calc(100vh - 120px);min-height:460px}}
+#gl,#gl canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+#mini{position:absolute;top:10px;right:10px;width:200px;height:143px;border:2px solid #1d2a4a;border-radius:8px;background:#f4f1ec;box-shadow:3px 3px 0 #1d2a4a;cursor:zoom-in;transition:width .2s,height .2s}
+#mini.big{width:min(560px,80%);height:auto;aspect-ratio:28/20;cursor:zoom-out}
+.miniTag{position:absolute;top:14px;right:16px;font:400 .75rem "DotGothic16",sans-serif;color:#1d2a4a;background:rgba(255,255,255,.85);padding:0 5px;border-radius:3px;pointer-events:none}
+#banner{position:absolute;top:14px;left:50%;transform:translateX(-50%);font:400 1.15rem "DotGothic16",sans-serif;color:#fff;background:rgba(20,26,45,.72);padding:4px 16px;border-radius:4px;opacity:0;transition:opacity .4s;pointer-events:none;white-space:nowrap}
+#banner.show{opacity:1}
+#actBtn{position:absolute;left:50%;bottom:22px;transform:translateX(-50%);font-size:1rem;max-width:80%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#actBtn:active{transform:translate(calc(-50% + 3px),3px)}
+#joy{position:absolute;left:18px;bottom:18px;width:118px;height:118px;border-radius:50%;background:rgba(255,255,255,.3);border:2px solid rgba(29,42,74,.55);display:none;pointer-events:none;z-index:3}
+#joy.on{display:block}
+#knob{position:absolute;left:50%;top:50%;width:50px;height:50px;margin:-25px 0 0 -25px;border-radius:50%;background:var(--orange);border:2px solid #1d2a4a}
+@media (max-width:600px){#mini{width:132px;height:94px}#mini.big{width:92%;height:auto}.miniTag{right:14px}}
+@media (pointer:coarse){#actBtn{left:auto;right:18px;transform:none}#actBtn:active{transform:translate(3px,3px)}}
+.zoom{position:absolute;right:10px;bottom:12px;display:flex;flex-direction:column;gap:6px}
+@media (pointer:coarse){.zoom{bottom:auto;top:170px}}
+.zoom .btn{width:38px;height:38px;padding:0;font-size:1.1rem}
+.keys{position:absolute;left:10px;bottom:8px;font-size:.78rem;color:#1d2a4a;background:rgba(255,255,255,.78);padding:2px 8px;border-radius:4px;pointer-events:none}
+@media (pointer:coarse){.keys{display:none}}
+.err{position:absolute;inset:0;display:grid;place-items:center;padding:20px;text-align:center;background:var(--panel);color:var(--ink)}
+
+.side{grid-area:side;display:flex;flex-direction:column;gap:12px;min-width:0}
+.box{border:2px solid var(--ink);border-radius:8px;background:var(--panel);padding:10px 12px}
+.box h2{font-family:"DotGothic16",sans-serif;font-weight:400;font-size:1rem;margin:0 0 6px;display:flex;justify-content:space-between;align-items:center}
+.kpi{display:grid;grid-template-columns:3.2em 1fr auto;align-items:center;gap:4px 8px;font-size:.9rem;margin:4px 0}
+.kpi .bar{height:12px}
+.kpi.done .bar>i{background:var(--green)}
+.kpi span:last-child{font-variant-numeric:tabular-nums;white-space:nowrap}
+.near{min-height:120px;font-size:.88rem}
+.near .nm{font-weight:900;font-size:1rem}
+.muted{color:var(--ink-soft)}
+.tag{display:inline-block;border:1.5px solid var(--ink);border-radius:3px;padding:0 5px;font-size:.78rem;margin:2px 4px 2px 0}
+.tag.idle{border-color:var(--green);color:var(--green)}
+.tag.peak,.tag.holiday,.tag.lost{border-color:var(--red);color:var(--red)}
+.log{list-style:none;margin:0;padding:0;font-size:.84rem;max-height:180px;overflow:auto}
+.log li{padding:3px 0;border-top:1px dashed var(--grid)}
+.log li:first-child{border-top:0}
+.log time{font-family:"DotGothic16",sans-serif;color:var(--ink-soft);margin-right:6px}
+.btn{font:inherit;font-weight:700;color:var(--ink);background:var(--panel);border:2px solid var(--ink);border-radius:6px;padding:8px 12px;box-shadow:3px 3px 0 var(--ink);cursor:pointer;transition:transform .05s,box-shadow .05s;user-select:none;-webkit-user-select:none;line-height:1.35}
+.btn:active{transform:translate(3px,3px);box-shadow:0 0 0 var(--ink)}
+.btn:focus-visible{outline:3px solid var(--orange);outline-offset:2px}
+.btn.pri{background:var(--orange);color:var(--on-orange)}
+.btn.sm{padding:3px 8px;font-size:.8rem;box-shadow:2px 2px 0 var(--ink)}
+.btn:disabled{opacity:.4;cursor:not-allowed;transform:none;box-shadow:3px 3px 0 var(--ink)}
+.btn small{font-weight:400;display:block;font-size:.78rem}
+#view .btn{color:#1d2a4a;background:#fff;border-color:#1d2a4a;box-shadow:3px 3px 0 #1d2a4a}
+#view .btn.pri{background:#f09000}
+.overlay{position:fixed;inset:0;background:rgba(15,21,35,.6);display:flex;align-items:center;justify-content:center;padding:16px;padding-top:calc(16px + env(safe-area-inset-top,0px));padding-bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:20;overflow:auto}
+.overlay[hidden]{display:none}
+.card{width:100%;max-width:500px;background:var(--panel);border:2px solid var(--ink);border-radius:10px;box-shadow:7px 7px 0 var(--ink);padding:18px;max-height:100%;overflow:auto}
+.card.wide{max-width:780px}
+.card h3{font-family:"DotGothic16",sans-serif;font-weight:400;font-size:1.35rem;margin:0 0 2px;line-height:1.3}
+.card p{margin:.4em 0}
+.row{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
+.row .btn{flex:1 1 calc(50% - 10px)}
+.row .btn.full{flex-basis:100%}
+.shophead{display:flex;gap:12px;align-items:center}
+.shophead .ic{font-size:2.3rem;line-height:1;width:58px;height:58px;display:grid;place-items:center;border:2px solid var(--orange);border-radius:50%;background:var(--orange-soft);flex:none}
+.who{font-size:.86rem;margin-top:8px;padding:6px 10px;border:1px dashed var(--block-line);border-radius:6px}
+.who div{margin:1px 0}
+.bubble{font-family:"DotGothic16",sans-serif;font-size:1.02rem;border:2px solid var(--ink);border-radius:8px;padding:10px 12px;margin:14px 0 10px;position:relative;background:var(--paper);min-height:3.2em}
+.bubble::before{content:"";position:absolute;top:-9px;left:24px;width:14px;height:14px;background:var(--paper);border-left:2px solid var(--ink);border-top:2px solid var(--ink);transform:rotate(45deg)}
+.bubble .sp{display:block;font-family:"Zen Kaku Gothic New",sans-serif;font-size:.78rem;color:var(--ink-soft);margin-bottom:2px}
+.meters{display:grid;grid-template-columns:auto 1fr auto;gap:6px 10px;align-items:center;font-size:.88rem}
+.meters .bar{height:14px}
+.pips{letter-spacing:2px;color:var(--orange)}
+.note{font-size:.84rem;color:var(--ink-soft);margin-top:6px}
+table{width:100%;border-collapse:collapse;font-size:.88rem;margin-top:8px}
+th,td{border-bottom:1px solid var(--grid);padding:6px 4px;text-align:right;vertical-align:top}
+th:first-child,td:first-child{text-align:left}
+.list td,.list th{text-align:left}
+td.ok{color:var(--green);font-weight:700}
+td.ng{color:var(--red);font-weight:700}
+.tblwrap{overflow-x:auto}
+.rank{font-family:"DotGothic16",sans-serif;font-size:4.5rem;line-height:1;color:var(--orange);margin:6px 0}
+.slack{border-left:4px solid var(--orange);padding:6px 10px;background:var(--paper);border-radius:0 6px 6px 0;font-size:.92rem;margin-top:10px}
+.rules{padding-left:1.2em;margin:.6em 0;font-size:.9rem}
+.rules li{margin:.25em 0}
+.toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--paper);padding:8px 14px;border-radius:6px;font-size:.9rem;max-width:92vw;z-index:30;opacity:0;transition:opacity .2s;pointer-events:none}
+.toast.show{opacity:1}
+.legend{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:.8rem;color:var(--ink-soft)}
+.legend b{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:4px;vertical-align:middle}
+#fade{position:absolute;inset:0;background:#000;opacity:0;pointer-events:none;transition:opacity .25s;z-index:6}
+#fade.on{opacity:1}
+#vui{position:absolute;inset:0;pointer-events:none;z-index:5;color:#1d2a4a}
+#vui[hidden]{display:none}
+.vhead{position:absolute;top:10px;left:10px;max-width:min(390px,calc(100% - 20px));background:rgba(255,255,255,.93);border:2px solid #1d2a4a;border-radius:8px;padding:8px 12px;font-size:.82rem;pointer-events:auto;box-shadow:3px 3px 0 #1d2a4a}
+.vname{font-weight:900;font-size:1rem}
+.vsub{color:#56627c}
+.vmeters{display:grid;grid-template-columns:auto 1fr auto;gap:3px 8px;align-items:center;margin-top:4px}
+.vmeters .bar{height:10px;border-color:#1d2a4a;background:#fff}
+.vmeters .bar>i{background:#f09000}
+.vmeters .bar.pat>i{background:#2f8f5b}
+.vmeters .bar.pat.low>i{background:#d6413a}
+.vmeters .pips{color:#f09000}
+.vnotes{margin-top:4px;font-size:.78rem;color:#56627c;border-top:1px dashed #b9c2cc;padding-top:4px}
+#vui .tag{border-color:#1d2a4a;color:#1d2a4a}
+#vui .tag.idle{border-color:#2f8f5b;color:#2f8f5b}
+#vui .tag.peak,#vui .tag.closed{border-color:#d6413a;color:#d6413a}
+.vbox{position:absolute;left:10px;right:10px;bottom:10px;background:rgba(255,255,255,.96);border:2px solid #1d2a4a;border-radius:10px;box-shadow:4px 4px 0 #1d2a4a;padding:10px 14px;pointer-events:auto;max-height:56%;overflow:auto}
+.vsp{font-size:.78rem;color:#56627c;min-height:1.1em;font-weight:700}
+.vline{font-family:"DotGothic16",sans-serif;font-size:1.05rem;min-height:2.7em;cursor:pointer;line-height:1.5}
+.vline.narr{color:#56627c}
+.vstage{display:flex;flex-wrap:wrap;align-items:center;gap:2px 6px;font-size:.78rem;color:#8a93a3;margin-bottom:6px;padding-bottom:6px;border-bottom:1px dashed #c9d0d8}
+.vstage .cur{color:#1d2a4a;font-weight:900;background:#ffe2b0;padding:0 6px;border-radius:3px}
+.vstage .done{color:#2f8f5b}
+.vstage i{font-style:normal;color:#b9c2cc}
+.vyou{font-size:.85rem;color:#26365e;background:#eef3f8;border-left:3px solid #26365e;padding:3px 8px;margin-bottom:6px;border-radius:0 4px 4px 0}
+.vcomps{margin-top:5px;padding-top:4px;border-top:1px dashed #b9c2cc;font-size:.8rem}
+.vcomps .ok{color:#2f8f5b;font-weight:900}
+.vbtns{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-top:8px}
+.vbtns .btn{font-size:.88rem;padding:6px 10px;text-align:left}
+#view.inVisit #mini,#view.inVisit .miniTag,#view.inVisit #joy,#view.inVisit .zoom,#view.inVisit #actBtn,#view.inVisit .keys,#view.inVisit #banner{display:none!important}
+@media (max-width:600px){#view.inVisit{height:88vh}.vstage{font-size:.68rem}.vyou{font-size:.76rem}.vcomps{font-size:.7rem}.vhead{font-size:.72rem;padding:5px 8px;max-width:calc(100% - 20px)}.vhead .vmeters{grid-template-columns:auto 1fr auto auto 1fr auto;gap:2px 5px}.vnotes{display:none}.vbox{max-height:48%;padding:8px 10px}.vbtns{grid-template-columns:repeat(2,1fr);gap:6px}.vbtns .btn{font-size:.8rem;padding:5px 7px}.vline{font-size:.95rem}}
+#pgQuick{position:absolute;left:50%;bottom:74px;transform:translateX(-50%);font-size:.85rem;padding:5px 10px}
+@media (pointer:coarse){#pgQuick{left:auto;right:18px;transform:none;bottom:76px}}
+#view.inVisit #pgQuick{display:none!important}
+.howto{margin-top:12px;border-top:1px dashed var(--grid);padding-top:8px}.howto summary{cursor:pointer;font-weight:700;color:var(--ink-soft)}
+#navChip{position:absolute;left:10px;bottom:40px;display:flex;align-items:center;gap:8px;background:#fff;color:#1d2a4a;border:2px solid #1d2a4a;border-radius:6px;padding:4px 6px 4px 10px;font-size:.85rem;font-weight:700;box-shadow:3px 3px 0 #1d2a4a;z-index:3}
+#navChip[hidden]{display:none}
+#navX{font:inherit;border:0;background:#1d2a4a;color:#fff;border-radius:4px;width:26px;height:26px;cursor:pointer}
+@media (pointer:coarse){#navChip{bottom:auto;top:10px;left:10px}}
+#pauseOv{position:absolute;inset:0;background:rgba(15,21,35,.45);display:grid;place-items:center;z-index:4;cursor:pointer}
+#pauseOv[hidden]{display:none}
+#pauseOv div{background:#fff;color:#1d2a4a;border:2px solid #1d2a4a;border-radius:8px;padding:12px 22px;font:400 1.3rem "DotGothic16",sans-serif;text-align:center;box-shadow:4px 4px 0 #1d2a4a}
+#pauseOv small{display:block;font:400 .8rem "Zen Kaku Gothic New",sans-serif;color:#56627c;margin-top:4px}
+.phone{text-align:center}
+.phone .ringIc{font-size:3rem;line-height:1;display:inline-block;animation:ring .5s ease-in-out infinite}
+.phone.sm{display:flex;align-items:center;gap:10px;text-align:left}.phone.sm .ringIc{font-size:1.8rem}
+.phone .ringIc.still{animation:none}
+@keyframes ring{0%,100%{transform:rotate(0)}20%{transform:rotate(-14deg)}40%{transform:rotate(12deg)}60%{transform:rotate(-8deg)}80%{transform:rotate(6deg)}}
+.card .vyou{font-size:.85rem;color:#26365e;background:#eef3f8;border-left:3px solid #26365e;padding:3px 8px;margin-top:10px;border-radius:0 4px 4px 0}
+.vbtns kbd{display:inline-block;min-width:1.3em;margin-right:6px;padding:0 4px;border:1.5px solid #8a93a3;border-radius:3px;font:700 .72rem system-ui,sans-serif;color:#56627c;text-align:center;vertical-align:1px}
+.vbtns .btn.pri kbd{border-color:#1d2a4a;color:#1d2a4a}
+@media (pointer:coarse){.phone{text-align:center}
+.phone .ringIc{font-size:3rem;line-height:1;display:inline-block;animation:ring .5s ease-in-out infinite}
+.phone.sm{display:flex;align-items:center;gap:10px;text-align:left}.phone.sm .ringIc{font-size:1.8rem}
+.phone .ringIc.still{animation:none}
+@keyframes ring{0%,100%{transform:rotate(0)}20%{transform:rotate(-14deg)}40%{transform:rotate(12deg)}60%{transform:rotate(-8deg)}80%{transform:rotate(6deg)}}
+.card .vyou{font-size:.85rem;color:#26365e;background:#eef3f8;border-left:3px solid #26365e;padding:3px 8px;margin-top:10px;border-radius:0 4px 4px 0}
+.vbtns kbd{display:none}}
+#view.inVisit #navChip,#view.inVisit #pauseOv{display:none!important}
+html,body{overscroll-behavior:none}
+#view,#vui,.pad,.btn,#mini{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+.btn,#mini,canvas{touch-action:manipulation}
+#view canvas{touch-action:none}
+#sheetBtn,#sheetClose,#sheetBack{display:none}
+@media (max-width:600px){
+  body{overflow:hidden;position:fixed;inset:0}
+  .app{padding:4px 6px;gap:6px;height:100dvh;grid-template-rows:auto 1fr;grid-template-areas:"hud" "view"}
+  .hud{gap:4px 10px;padding-bottom:5px;border-bottom-width:1.5px;padding-top:2px}
+  .hud h1{display:none}
+  .clock{font-size:1.45rem;margin-right:auto;order:-1}
+  .chip{font-size:.78rem}
+  .stam .bar{width:70px}
+  #pauseBtn{padding:3px 7px}
+  #view,#view.inVisit{height:auto;min-height:0}
+  #sheetBtn{display:block;position:absolute;left:8px;top:8px;z-index:3;font-size:.8rem;padding:4px 8px;box-shadow:2px 2px 0 #1d2a4a}
+  #navChip{top:46px!important}
+  .side{position:fixed;left:0;right:0;bottom:0;z-index:15;max-height:72dvh;overflow:auto;background:var(--paper);border-top:2px solid var(--ink);border-radius:14px 14px 0 0;padding:10px 10px calc(14px + env(safe-area-inset-bottom,0px));transform:translateY(105%);transition:transform .25s ease;box-shadow:0 -6px 18px rgba(0,0,0,.25)}
+  .side.open{transform:none}
+  #sheetClose{display:block;align-self:flex-end}
+  #sheetBack:not([hidden]){display:block;position:fixed;inset:0;background:rgba(15,21,35,.4);z-index:14}
+  #view.inVisit #sheetBtn{display:none}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="hud">
+    <h1>KPIダッシュ!街まわり営業</h1>
+    <span class="chip" id="date">10/5(月)</span>
+    <span class="chip" id="weather">晴れ</span>
+    <span class="chip" id="apo"></span>
+    <button class="btn sm" id="callChip" hidden>📞 不在着信</button>
+    <span class="clock" id="clock">9:00</span>
+    <button class="btn sm" id="pauseBtn" aria-pressed="false">⏸ 一時停止</button>
+    <button class="btn sm" id="setBtn" aria-label="設定">⚙</button>
+    <span class="stam">体力 <span class="bar" id="stambar"><i style="width:100%"></i></span></span>
+  </header>
+
+  <div id="view">
+    <div id="gl"></div>
+    <canvas id="mini" width="560" height="400" aria-label="エリアマップ。クリックで拡大"></canvas>
+    <span class="miniTag">MAP</span>
+    <div id="banner"></div>
+    <div id="joy" aria-hidden="true"><div id="knob"></div></div>
+    <div id="navChip" hidden><span id="navTxt"></span><button id="navX" aria-label="移動をやめる">✕</button></div>
+    <div id="pauseOv" hidden><div>⏸ 一時停止中<small>タップ / P キーで再開</small></div></div>
+    <div class="zoom"><button class="btn" id="zin" aria-label="ズームイン">＋</button><button class="btn" id="zout" aria-label="ズームアウト">－</button></div>
+    <button class="btn pri" id="actBtn" hidden></button>
+    <button class="btn" id="pgQuick" hidden>📱 ページ確認</button>
+    <button class="btn" id="sheetBtn" aria-label="KPIと行動ログを開く">📊 <span id="sheetKpi"></span></button>
+    <div id="fade"></div>
+    <div id="vui" hidden><div class="vhead" id="vhead"></div><div class="vbox"><div class="vstage" id="vstage" hidden></div><div class="vyou" id="vyou" hidden></div><div class="vsp" id="vsp"></div><div class="vline" id="vline"></div><div class="vbtns" id="vbtns"></div></div></div>
+    <div class="keys">クリックで目的地へ移動 ・ WASD/矢印 ・ Shift で小走り ・ E 入店 ・ M 地図 ・ P 一時停止</div>
+  </div>
+
+  <div id="sheetBack" hidden></div>
+  <aside class="side">
+    <button class="btn sm" id="sheetClose" aria-label="閉じる">✕ 閉じる</button>
+    <section class="box">
+      <h2>今日のKPI <button class="btn sm" id="listBtn">顧客リスト</button></h2>
+      <div id="kpis"></div>
+    </section>
+    <section class="box near" id="near"></section>
+    <section class="box">
+      <h2>行動ログ</h2>
+      <ul class="log" id="log"></ul>
+    </section>
+    <div class="legend">
+      <span><b style="background:var(--green)"></b>アイドルタイム</span>
+      <span><b style="background:var(--red)"></b>ピーク帯</span>
+      <span><b style="background:#e0263c"></b>他媒体の営業</span>
+    </div>
+  </aside>
+</div>
+
+<div class="overlay" id="ov"><div class="card" id="card" role="dialog" aria-modal="true"></div></div>
+<div class="toast" id="toast" role="status"></div>
+
+<script src="three.min.js"></script>
+<script>window.THREE||document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"><\/script>')</script>
+<script>
+(()=>{
+const $=s=>document.querySelector(s);
+if(!window.THREE){$('#gl').innerHTML='<div class="err">3D表示の読み込みに失敗しました。通信環境を確認して再読み込みしてください。</div>';return;}
+const T3=window.THREE;
+const rnd=(a,b)=>a+Math.random()*(b-a);
+const ri=(a,b)=>Math.floor(rnd(a,b+1));
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const lerp=(a,b,t)=>a+(b-a)*t;
+const fmtT=t=>`${Math.floor(t/60)}:${String(Math.floor(t%60)).padStart(2,'0')}`;
+const yen=n=>'¥'+Math.round(n).toLocaleString('ja-JP');
+const DIRS=[[0,-1],[0,1],[-1,0],[1,0]];
+let seed=20261005;const srand=()=>{seed|=0;seed=seed+0x6D2B79F5|0;let t=Math.imul(seed^seed>>>15,1|seed);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};
+
+// ================= DATA =================
+const COLS=28,ROWS=20,TS=4,DAYS=5,START=9*60,END=19*60,TIME_SCALE=2;
+const ROAD_R=[2,6,10,14,18],ROAD_C=[1,5,9,13,17,21,25],RIVER_X=19;
+const CAR_R=[2,10,18],CAR_C=[5,13,25];
+const WD=['月','火','水','木','金'];
+const TARGET={visit:8,meet:5,win:2,sales:100000};
+const KPI_LABEL={visit:'訪問',meet:'商談',win:'受注',sales:'売上'};
+const PRODUCTS={
+  予約:{name:'ネット予約',base:30000,issue:'予約の取りこぼし'},
+  集客:{name:'PR強化',base:50000,issue:'新規客が増えない'},
+  求人:{name:'求人掲載',base:40000,issue:'人手不足'}
+};
+const NEED_LINE={
+  予約:'営業中に予約の電話が鳴りっぱなしでさ。出られなくて取りこぼしてる気がするんだよね',
+  集客:'平日の夜がとにかく暇でね。常連さんはいるけど、新しいお客さんが増えないんだよ',
+  求人:'人が足りなくて。バイト募集しても全然来ないし、来てもすぐ辞めちゃうんだ'
+};
+const TOPICS={soccer:'地元のサッカー',baseball:'プロ野球',fish:'釣り',town:'駅前の再開発',food:'食材・仕入れ'};
+const TOPIC_LINE={
+  soccer:'お、サッカー見るの?ホームの試合はスタジアムまで応援に行ってるよ。今年こそ昇格だ!',
+  baseball:'野球!昨日の試合見た?あそこで代打はないよなあ',
+  fish:'釣りやるの?今の時期は青物がいいよ。今度一緒に行く?',
+  town:'再開発ね。駅前の人の流れ、ほんとに変わったよ。うちも他人事じゃなくてさ',
+  food:'わかる?この魚、漁港から直で入れてるんだよ。そこ気づく人少ないんだ'
+};
+const PERS={
+  人情派:{chat:1.6,data:.6,turns:0,close:1,desc:'情に厚い。世間話から入ると心を開く'},
+  数字派:{chat:.5,data:1.6,turns:0,close:1,desc:'数字で納得したい。雑談は短めに'},
+  職人気質:{chat:.8,data:1,turns:-1,close:1,desc:'手が離せない。信頼がないと提案を聞かない'},
+  慎重派:{chat:1,data:1.2,turns:0,close:.8,desc:'即決しない。不安を先に潰すこと'},
+  新しもの好き:{chat:1,data:1,turns:0,close:1.2,desc:'新しい施策に前向き。ただし気が変わりやすい'}
+};
+const OBJ={
+  価格:{line:a=>`正直、月${a}はキツいよ。利益なんて大して出てないんだから`,ok:'roi'},
+  効果:{line:()=>'前に別の媒体に載せたけど、全然効果なかったんだよね',ok:'diff'},
+  他媒体:{line:()=>'別のグルメサイトにはもう載せてるし、それで十分じゃない?',ok:'role'},
+  手間:{line:()=>'更新する暇なんてないよ。厨房で手一杯なんだから',ok:'support'}
+};
+const RESP={
+  roi:{label:'費用対効果で話す',sub:'何組増えれば回収できるか',say:'月額で考えると、1日2組増えれば回収できる計算です',ok:'…1日2組増えれば元が取れるのか。そう言われるとな'},
+  diff:{label:'前回との違いを示す',sub:'写真・導線・プラン設計',say:'前回と違って、写真やプランの作り込みまで一緒にやります',ok:'なるほど。前は写真も載せっぱなしだったな'},
+  role:{label:'役割分担を話す',sub:'客層の違いと併用の使い分け',say:'あちらとは客層が違うので、使い分ければ両方活かせます',ok:'確かに、あっちは宴会の団体ばっかりだもんな'},
+  support:{label:'手間を引き取る',sub:'初期設定と更新はこちらで代行',say:'初期設定や更新は、こちらで代行します',ok:'そこまでやってくれるなら助かるな'},
+  fixed:{label:'定額で費用が読める',sub:'クリック課金への不満に応える',say:'うちは定額なので、クリックで請求が膨らむことはありません',ok:'クリックで請求が増えないなら、そっちの方がよっぽど安心だな'}
+};
+const SHOPS=[
+ {x:3,y:3,name:'洋食キッチン ぼんち',genre:'洋食',icon:'🍳',seats:22,need:'集客',type:'lunch',closed:2,mood:30,owner:'坂井 正男',age:'60代',pers:'人情派',topic:'baseball',clue:'壁に球団のカレンダー',obj:'手間',intro:'親父の代から40年、この場所でやってるんだ',col:'#e9d8b4'},
+ {x:7,y:5,name:'麺屋 いぶき',genre:'ラーメン',icon:'🍜',seats:14,need:'求人',type:'lunch',closed:0,mood:10,owner:'竹内 翔',age:'30代',pers:'職人気質',topic:'food',clue:'厨房の奥に煮干しの段ボールが積んである',obj:'価格',intro:'話は手短にね。スープ見てるから',col:'#c9c2b6'},
+ {x:3,y:9,name:'中華そば 福来',genre:'中華そば',icon:'🥢',seats:16,need:'集客',type:'lunch',closed:-1,mood:35,owner:'李 美玲',age:'40代',pers:'新しもの好き',topic:'town',clue:'レジ横に再開発の説明会チラシ',obj:'効果',intro:'食べログさん?SNSは自分でやってるけど、他にも何かやりたいと思ってたの',col:'#e7b7a3'},
+ {x:7,y:7,name:'スパイスカレー 月と象',genre:'カレー',icon:'🍛',seats:18,need:'集客',type:'lunch',closed:3,mood:25,owner:'川村 健',age:'40代',pers:'数字派',topic:'fish',clue:'入口に釣り竿が立てかけてある',obj:'効果',intro:'で、うちにどういうメリットがあるの?',col:'#f0cf84'},
+ {x:2,y:13,name:'定食 かのや',genre:'定食',icon:'🍚',seats:30,need:'求人',type:'lunch',closed:1,mood:35,owner:'鹿野 トシ子',age:'70代',pers:'人情派',topic:'food',clue:'手書きの「本日のおすすめ」が何枚も貼ってある',obj:'手間',intro:'あらまあ、若いのにスーツで大変ねえ',boss:{days:[2,4],who:'息子さん(経営担当)'},col:'#d9c7a6'},
+ {x:7,y:11,name:'ベーカリーカフェ ことり',genre:'カフェ',icon:'🥐',seats:20,need:'求人',type:'lunch',closed:0,mood:40,owner:'小鳥遊 葵',age:'30代',pers:'新しもの好き',topic:'town',clue:'新メニューの試作パンが並んでいる',obj:'他媒体',intro:'こんにちは!ちょうど焼き上がったところなんです',col:'#f3e3cf'},
+ {x:11,y:3,name:'イタリア食堂 Ponte',genre:'イタリアン',icon:'🍝',seats:32,need:'予約',type:'both',closed:0,mood:30,owner:'松尾 大輔',age:'40代',pers:'数字派',topic:'soccer',clue:'カウンターの上にサッカークラブのタオルマフラー',obj:'他媒体',intro:'駅近だから予約は多いんだけど、管理が大変でね',col:'#cfe0c3'},
+ {x:15,y:5,name:'鮨 小松',genre:'寿司',icon:'🍣',seats:12,need:'集客',type:'both',closed:2,mood:5,owner:'小松 源一',age:'60代',pers:'職人気質',topic:'fish',clue:'「本日の地魚」の木札',obj:'価格',intro:'…営業か。うちは口コミだけでやってきたんだ',col:'#e6e0d2'},
+ {x:11,y:7,name:'焼肉 牛勢',genre:'焼肉',icon:'🥩',seats:52,need:'予約',type:'dinner',closed:-1,mood:15,owner:'金田 剛',age:'50代',pers:'数字派',topic:'baseball',clue:'事務所の壁に売上グラフが貼ってある',obj:'価格',intro:'店長の金田です。本部の方針もあるんで、まずは話だけ',boss:{days:[1,3],who:'オーナー(他店と兼務)'},col:'#b9a49a'},
+ {x:15,y:9,name:'韓国食堂 ハヌル',genre:'韓国料理',icon:'🌶️',seats:34,need:'求人',type:'both',closed:-1,mood:30,owner:'朴 秀賢',age:'30代',pers:'新しもの好き',topic:'soccer',clue:'スタッフ募集の貼り紙が色あせている',obj:'他媒体',intro:'アンニョン!…あ、営業さんか。どうぞどうぞ',col:'#f2c0b0'},
+ {x:15,y:15,name:'ビストロ 川風',genre:'ビストロ',icon:'🍷',seats:26,need:'予約',type:'dinner',closed:0,mood:25,owner:'葭田 恵',age:'40代',pers:'慎重派',topic:'food',clue:'ワインの仕入れ伝票が山積み',obj:'効果',intro:'仕込み中なので、少しだけなら',col:'#c7d3e0'},
+ {x:11,y:17,name:'大衆割烹 なかじま',genre:'割烹',icon:'🍶',seats:40,need:'集客',type:'dinner',closed:-1,mood:20,owner:'中島 浩二',age:'50代',pers:'人情派',topic:'soccer',clue:'サッカー選手のサイン色紙が飾ってある',obj:'他媒体',intro:'おう、まあ座んなよ。お茶でいい?',col:'#d8c9ad'},
+ {x:23,y:3,name:'炭火焼鳥 とりまる',genre:'焼鳥',icon:'🍢',seats:28,need:'予約',type:'dinner',closed:0,mood:15,owner:'丸山 哲也',age:'40代',pers:'職人気質',topic:'baseball',clue:'焼き場の横に野球中継のラジオ',obj:'手間',intro:'串打ち中だから、手を動かしながらでいい?',col:'#a8907a'},
+ {x:20,y:5,name:'海鮮酒場 大漁丸',genre:'海鮮居酒屋',icon:'🐟',seats:48,need:'集客',type:'dinner',closed:-1,mood:25,owner:'稲毛 修',age:'50代',pers:'人情派',topic:'fish',clue:'大漁旗が天井に張ってある',obj:'効果',intro:'いらっしゃい!…なんだ、お客さんじゃないのか。ははは',col:'#b8cfe0'},
+ {x:24,y:5,name:'大衆酒場 みなと',genre:'居酒屋',icon:'🍺',seats:60,need:'求人',type:'dinner',closed:-1,mood:20,owner:'港 健太',age:'30代',pers:'数字派',topic:'soccer',clue:'シフト表が空欄だらけ',obj:'価格',intro:'店長の港です。手短にお願いできますか',boss:{days:[1,3],who:'エリアマネージャー'},col:'#c4ad8a'},
+ {x:23,y:9,name:'もつ焼き のれん',genre:'もつ焼き',icon:'🍻',seats:24,need:'予約',type:'dinner',closed:-1,mood:20,owner:'吉岡 誠',age:'50代',pers:'慎重派',topic:'baseball',clue:'常連のボトルがずらりと並ぶ',obj:'他媒体',intro:'うちは常連さんで持ってる店だからねえ',col:'#9e8a74'},
+ {x:20,y:12,name:'居酒屋 ひなた',genre:'居酒屋',icon:'🏮',seats:40,need:'予約',type:'dinner',closed:1,mood:30,owner:'本田 美咲',age:'30代',pers:'新しもの好き',topic:'town',clue:'SNS用の撮影スポットがある',obj:'手間',intro:'こんにちは〜!なにか面白い話ですか?',col:'#e8b9a0'},
+ {x:27,y:13,name:'天ぷら 寺尾',genre:'天ぷら',icon:'🍤',seats:20,need:'集客',type:'both',closed:2,mood:10,owner:'寺尾 正',age:'60代',pers:'慎重派',topic:'fish',clue:'「本日の江戸前」の黒板',obj:'価格',intro:'うちは昔ながらでやってるからね。新しいことはどうも',col:'#e2d6bd'},
+];
+
+// ================= GRID =================
+const grid=[];
+for(let y=0;y<ROWS;y++){grid[y]=[];for(let x=0;x<COLS;x++)grid[y][x]={t:(ROAD_R.includes(y)||ROAD_C.includes(x))?'road':'block'};}
+for(let x=0;x<COLS;x++)grid[0][x]={t:'rail'};
+for(let x=9;x<=16;x++)grid[1][x]={t:'station'};
+for(let y=1;y<ROWS;y++)grid[y][RIVER_X]={t:ROAD_R.includes(y)?'bridge':'river'};
+for(let y=11;y<=13;y++)for(let x=10;x<=12;x++)grid[y][x]={t:'park'};
+for(let y=15;y<=17;y++)for(let x=22;x<=24;x++)grid[y][x]={t:'shrine'};
+for(let x=0;x<=17;x++)if(grid[6][x].t==='road')grid[6][x].arcade=true;
+const SPOTS=[
+  {t:'cafe',x:7,y:3,name:'喫茶 ひとやすみ',icon:'☕'},
+  {t:'cafe',x:23,y:11,name:'カフェ 木漏れ日',icon:'☕'},
+  {t:'conv',x:16,y:13,name:'コンビニ',icon:'🏪'},
+  {t:'office',x:3,y:15,name:'営業所',icon:'🏢'},
+];
+SPOTS.forEach(p=>grid[p.y][p.x]={t:p.t,spot:p});
+const isRoad=(x,y)=>x>=0&&y>=0&&x<COLS&&y<ROWS&&(grid[y][x].t==='road'||grid[y][x].t==='bridge');
+const isWalk=(x,y)=>x>=0&&y>=0&&x<COLS&&y<ROWS&&['road','bridge','park'].includes(grid[y][x].t);
+SHOPS.forEach(s=>{grid[s.y][s.x]={t:'shop',shop:s};for(const[dx,dy]of DIRS)if(isRoad(s.x+dx,s.y+dy)){s.door=[s.x+dx,s.y+dy];break;}});
+SPOTS.forEach(p=>{for(const[dx,dy]of DIRS)if(isRoad(p.x+dx,p.y+dy)){p.door=[p.x+dx,p.y+dy];break;}});
+const wx=tx=>tx*TS+TS/2, wz=ty=>ty*TS+TS/2;
+const area=x=>x<9?'west':x<18?'center':'east';
+function areaName(tx,ty){
+  if(ty<=3&&tx>=6&&tx<=16)return 'ひなた駅前';
+  if(ty>=5&&ty<=7&&tx<=17)return '銀杏通り商店街';
+  if(tx>=18&&tx<=20)return '川沿いの道';
+  if(tx>=21)return 'のれん横丁';
+  if(tx>=9&&ty>=10&&ty<=14)return 'ひなた公園通り';
+  if(tx<=8&&ty>=8)return '西口オフィス街';
+  return 'ひなた本町';
+}
+// interactables
+const INTER=[];
+SHOPS.forEach(s=>INTER.push({kind:'shop',ref:s,tx:s.x,ty:s.y,door:s.door}));
+SPOTS.forEach(p=>INTER.push({kind:p.t,ref:p,tx:p.x,ty:p.y,door:p.door}));
+INTER.push({kind:'shrine',ref:{name:'ひなた神社',icon:'⛩️'},tx:23,ty:17,door:[23,18]});
+INTER.push({kind:'station',ref:{name:'ひなた駅',icon:'🚉'},tx:12,ty:1,door:[12,2]});
+INTER.forEach(i=>{i.px=(wx(i.tx)+wx(i.door[0]))/2;i.pz=(wz(i.ty)+wz(i.door[1]))/2;});
+
+// ================= SCHEDULE =================
+const PEAK={k:'peak',label:'ピーク帯',mark:'×',mod:-20,absent:0};
+const IDLE={k:'idle',label:'アイドルタイム',mark:'◎',mod:12,absent:.1};
+function status(s,t){
+  if(s.won)return {k:'won',label:'受注済',mark:'',mod:0,absent:0};
+  if(s.lost)return {k:'lost',label:'他社で決定',mark:'',mod:0,absent:0};
+  if(s.closed===G.day-1)return {k:'holiday',label:'定休日',mark:'',mod:0,absent:1};
+  const h=t/60;
+  if(s.type==='lunch'){
+    if(h<10.5)return {k:'prep',label:'仕込み中',mark:'△',mod:0,absent:.2};
+    if(h<13.5)return PEAK;
+    if(h<17)return IDLE;
+    return {k:'normal',label:'夜営業',mark:'△',mod:-5,absent:.15};
+  }
+  if(s.type==='dinner'){
+    if(h<13.5)return {k:'closed',label:'店主未出勤',mark:'×',mod:0,absent:.8};
+    if(h<17.5)return IDLE;
+    return PEAK;
+  }
+  if(h<11)return {k:'prep',label:'仕込み中',mark:'△',mod:0,absent:.3};
+  if(h<11.5)return {k:'normal',label:'開店直前',mark:'△',mod:-5,absent:.1};
+  if(h<13.5)return PEAK;
+  if(h<14)return {k:'normal',label:'ランチ終盤',mark:'△',mod:0,absent:.1};
+  if(h<17.5)return IDLE;
+  return PEAK;
+}
+const amount=(p,s)=>Math.round(PRODUCTS[p].base*(s.seats>=40?1.5:s.seats>=20?1:.7)/1000)*1000;
+const bestTime=s=>s.type==='dinner'?'15時〜17時':s.type==='lunch'?'14時〜16時':'14時半〜17時';
+
+// ================= STATE =================
+let G;
+function newGame(){
+  G={day:1,time:START,stamina:100,x:wx(3),z:wz(14),face:Math.PI,rain:false,mode:'title',apos:[],calls:[],missedCalls:[],
+     today:{visit:0,meet:0,win:0,sales:0},total:{visit:0,meet:0,win:0,sales:0},log:[],hint:'',ate:false,pray:false,news:[],areaName:''};
+  SHOPS.forEach(s=>Object.assign(s,{won:false,lost:false,carry:0,trust:0,needKnown:false,refused:false,refusedBefore:false,met:false,topicKnown:false,bossKnown:false,objCleared:false,ate:false,wrongProp:null,rivalToday:false,obs:new Set(),depth:0,needHint:false,objKnown:false,num:null,greeted:false,pageChecked:false,page:null,compDis:false}));SHOPS.forEach(initComps);
+}
+const dateStr=()=>`10/${4+G.day}(${WD[G.day-1]})`;
+function startDay(){
+  Object.assign(G,{time:START,stamina:100,x:wx(3)+1.3,z:wz(14)-1.2,face:Math.PI,rain:Math.random()<.3,today:{visit:0,meet:0,win:0,sales:0},log:[],ate:false,pray:false,news:[]});
+  R={tx:12,ty:2,ptx:12,pty:2,prog:0,path:[],target:null,busy:0};
+  G.missed=[];G.apos=G.apos.filter(a=>{if(a.day<G.day){const s=SHOPS[a.si];s.trust=Math.max(0,s.trust-1);s.carry=Math.max(0,s.carry-15);G.missed.push(s.name);return false;}return true;});
+  SHOPS.forEach((s,i)=>{if(s.refused)s.refusedBefore=true;s.refused=false;s.rivalToday=false;
+    if(G.day>1&&!G.apos.some(a=>a.si===i)){s.carry=Math.round(s.carry*.8);s.trust=Math.max(0,s.trust-1);}});
+  G.missed.forEach(n=>addLog(`⚠ ${n}とのアポをすっぽかしてしまった`));
+  const open=SHOPS.filter(s=>!s.won&&!s.lost),opts=[];
+  const a=open.filter(s=>!s.needKnown);if(a.length){const s=pick(a);opts.push(()=>{s.needKnown=true;return `${s.name}の${fnm(s)}さん、最近「${PRODUCTS[s.need].issue}」で悩んでるらしい。${bestTime(s)}あたりに寄ってみて`;});}
+  const b=open.filter(s=>!s.topicKnown);if(b.length){const s=pick(b);opts.push(()=>{s.topicKnown=true;return `${s.name}の${fnm(s)}さん、${TOPICS[s.topic]}の話をすると機嫌がいいらしいよ`;});}
+  const c=open.filter(s=>s.boss&&!s.bossKnown);if(c.length){const s=pick(c);opts.push(()=>{s.bossKnown=true;return `${s.name}は決裁が${s.boss.who}。${s.boss.days.map(d=>WD[d]).join('・')}曜しか店にいないから注意`;});}
+  G.hint=opts.length?pick(opts)():'残りのお店は情報が揃ってるはず。あとは刈り取りだ';
+  addLog(`${dateStr()} 開始。${G.rain?'雨で歩くのが遅くなる':'晴れ'}`);
+  setRain(G.rain);clearNav();togglePause(false);
+  G.mode='morning';showMorning();
+}
+const fnm=s=>s.owner.split(' ')[0];
+function addLog(text){G.log.unshift({t:G.time,text});if(G.log.length>40)G.log.pop();renderLog();}
+function pass(min){G.time+=min;rivalAdvance(min);}
+
+// ================= RIVAL =================
+let R=null;
+function bfs(sx,sy,goal){
+  const key=(x,y)=>y*COLS+x,gk=key(goal[0],goal[1]),prev=new Map([[key(sx,sy),-1]]),q=[[sx,sy]];
+  while(q.length){
+    const [x,y]=q.shift();
+    if(key(x,y)===gk){const p=[];let k=gk;while(k!==key(sx,sy)){p.unshift([k%COLS,Math.floor(k/COLS)]);k=prev.get(k);}return p;}
+    for(const[dx,dy]of DIRS){const nx=x+dx,ny=y+dy;if(isRoad(nx,ny)&&!prev.has(key(nx,ny))){prev.set(key(nx,ny),key(x,y));q.push([nx,ny]);}}
+  }
+  return [];
+}
+function rivalAdvance(gm){
+  if(!R||G.time<10*60||G.time>18*60+30)return;
+  while(gm>0){
+    if(R.busy>0){const u=Math.min(R.busy,gm);R.busy-=u;gm-=u;if(R.busy<=0)R.target=null;continue;}
+    if(!R.target){
+      const c=SHOPS.filter(s=>!s.won&&!s.lost&&!s.rivalToday&&s.closed!==G.day-1&&!(V&&V.s===s));
+      if(!c.length)return;
+      R.target=pick(c);R.path=bfs(R.tx,R.ty,R.target.door);R.prog=0;continue;
+    }
+    if(R.path.length){
+      const need=(1-R.prog)/0.45;
+      if(gm>=need){gm-=need;R.ptx=R.tx;R.pty=R.ty;[R.tx,R.ty]=R.path.shift();R.prog=0;}
+      else{R.prog+=gm*0.45;gm=0;}
+      continue;
+    }
+    const s=R.target;if(V&&V.s===s){R.target=null;continue;}s.rivalToday=true;R.busy=18;
+    if(!s.won){
+      s.carry=Math.max(0,s.carry-8);
+      const near=Math.hypot(G.x-wx(R.tx),G.z-wz(R.ty))<28;
+      if(s.carry<25&&!G.apos.some(a=>a.si===SHOPS.indexOf(s))&&Math.random()<.12){s.lost=true;G.news.push(`${s.name}が他媒体と契約`);addLog(`⚠ ${s.name}、他媒体で決めたらしい…`);}
+      else if(near)addLog(`他媒体の営業が${s.name}に入っていくのを見かけた`);
+    }
+  }
+}
+function rivalPos(){
+  if(!R)return null;
+  const nx=R.path.length?R.path[0]:[R.tx,R.ty];
+  return {x:lerp(wx(R.tx),wx(nx[0]),R.prog),z:lerp(wz(R.ty),wz(nx[1]),R.prog),dx:nx[0]-R.tx,dz:nx[1]-R.ty};
+}
+
+// ================= THREE SETUP =================
+const view=$('#view'),glWrap=$('#gl');
+const renderer=new T3.WebGLRenderer({antialias:true});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+renderer.shadowMap.enabled=true;renderer.shadowMap.type=T3.PCFSoftShadowMap;
+glWrap.appendChild(renderer.domElement);
+const scene=new T3.Scene();
+const camera=new T3.PerspectiveCamera(45,1,0.5,400);
+const hemi=new T3.HemisphereLight(0xdfefff,0x6b6455,.75);scene.add(hemi);
+const sun=new T3.DirectionalLight(0xffffff,.9);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);
+Object.assign(sun.shadow.camera,{left:-34,right:34,top:34,bottom:-34,near:1,far:140});sun.shadow.bias=-0.0006;
+scene.add(sun);scene.add(sun.target);
+scene.fog=new T3.Fog(0xbfe3ff,70,170);
+const matCache={};
+const M=(c,o={})=>{const k=c+'|'+JSON.stringify(o);return matCache[k]||(matCache[k]=new T3.MeshLambertMaterial(Object.assign({color:c},o)));};
+function cvTex(w,h,fn){const c=document.createElement('canvas');c.width=w;c.height=h;fn(c.getContext('2d'),w,h);const t=new T3.CanvasTexture(c);t.anisotropy=4;return t;}
+function rrect(c,x,y,w,h,r){c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath();}
+const EMOJI_FONT='"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';
+const JP_FONT='"Zen Kaku Gothic New","Hiragino Sans","Meiryo",sans-serif';
+const nightMats=[];// {mat, day, night}
+const night=(mat,d,n)=>{nightMats.push({mat,d,n});return mat;};
+
+// ground
+const W=COLS*TS,H=ROWS*TS;
+const ground=new T3.Mesh(new T3.PlaneGeometry(W+80,H+80),M('#a9ad9f'));ground.rotation.x=-Math.PI/2;ground.position.set(W/2,-0.02,H/2);ground.receiveShadow=true;scene.add(ground);
+const plane=new T3.PlaneGeometry(1,1);plane.rotateX(-Math.PI/2);
+const box=new T3.BoxGeometry(1,1,1);const boxUp=box.clone();boxUp.translate(0,.5,0);
+const dummy=new T3.Object3D();
+function inst(geo,mat,list,{shadow=false,receive=true}={}){
+  if(!list.length)return null;
+  const m=new T3.InstancedMesh(geo,mat,list.length);
+  list.forEach((o,i)=>{dummy.position.set(o.x,o.y||0,o.z);dummy.rotation.set(o.rx||0,o.ry||0,o.rz||0);dummy.scale.set(o.sx||1,o.sy||1,o.sz||1);dummy.updateMatrix();m.setMatrixAt(i,dummy.matrix);if(o.c)m.setColorAt(i,new T3.Color(o.c));});
+  m.castShadow=shadow;m.receiveShadow=receive;scene.add(m);return m;
+}
+// roads
+const roadL=[],arcL=[],walkL=[],dashL=[],zebraL=[],lampL=[],bulbL=[],railL=[],bridgeL=[];
+const brickTex=cvTex(64,64,(c)=>{c.fillStyle='#c79a73';c.fillRect(0,0,64,64);c.fillStyle='#b5845f';for(let y=0;y<4;y++)for(let x=0;x<4;x++)if((x+y)%2)c.fillRect(x*16,y*16,16,16);c.strokeStyle='rgba(255,255,255,.25)';for(let i=0;i<=64;i+=16){c.beginPath();c.moveTo(i,0);c.lineTo(i,64);c.moveTo(0,i);c.lineTo(64,i);c.stroke();}});
+brickTex.wrapS=brickTex.wrapT=T3.RepeatWrapping;
+for(let y=0;y<ROWS;y++)for(let x=0;x<COLS;x++){
+  const g=grid[y][x],X=wx(x),Z=wz(y);
+  if(g.t==='road'){
+    (g.arcade?arcL:roadL).push({x:X,y:.02,z:Z,sx:TS,sz:TS});
+    if(!g.arcade){
+      DIRS.forEach(([dx,dy])=>{if(!isRoad(x+dx,y+dy)){walkL.push({x:X+dx*1.5,y:.07,z:Z+dy*1.5,sx:dx?1:TS,sy:.14,sz:dy?1:TS});}});
+      const hr=ROAD_R.includes(y),vr=ROAD_C.includes(x);
+      if(hr&&!vr){dashL.push({x:X-1,y:.04,z:Z,sx:1,sy:.02,sz:.14},{x:X+1,y:.04,z:Z,sx:1,sy:.02,sz:.14});}
+      if(vr&&!hr){dashL.push({x:X,y:.04,z:Z-1,sx:.14,sy:.02,sz:1},{x:X,y:.04,z:Z+1,sx:.14,sy:.02,sz:1});}
+      if(hr&&vr){
+        lampL.push({x:X+1.85,y:0,z:Z+1.85,sx:.12,sy:3.4,sz:.12});bulbL.push({x:X+1.85,y:3.45,z:Z+1.85,sx:.32,sy:.32,sz:.32});
+        DIRS.forEach(([dx,dy])=>{if(isRoad(x+dx,y+dy)&&!grid[y+dy][x+dx].arcade&&grid[y+dy][x+dx].t==='road'){
+          for(let i=-2;i<=2;i++){const along=i*.55;zebraL.push(dx?{x:X+dx*1.5,y:.045,z:Z+along,sx:.9,sy:.02,sz:.32}:{x:X+along,y:.045,z:Z+dy*1.5,sx:.32,sy:.02,sz:.9});}}});
+      }
+    }
+  }
+  if(g.t==='bridge'){bridgeL.push({x:X,y:0,z:Z,sx:TS,sy:.32,sz:TS+.4});railL.push({x:X,y:.3,z:Z-1.95,sx:TS,sy:.55,sz:.12},{x:X,y:.3,z:Z+1.95,sx:TS,sy:.55,sz:.12});}
+}
+// bridges are crossing the river vertically placed along x, adjust rails orientation: river runs N-S so rails along z edges? bridge spans E-W -> rails on north/south edges (z) correct.
+inst(plane,M('#4b5059'),roadL);
+inst(plane,new T3.MeshLambertMaterial({map:brickTex}),arcL);
+inst(boxUp,M('#c3c6c2'),walkL);
+inst(box,M('#f2f2ea'),dashL,{receive:false});
+inst(box,M('#f2f2ea'),zebraL,{receive:false});
+inst(boxUp,M('#9a9da5'),bridgeL);
+inst(boxUp,M('#e9e3d6'),railL,{shadow:true});
+inst(boxUp,M('#3b4150'),lampL,{shadow:true});
+const bulbMat=night(new T3.MeshLambertMaterial({color:'#fff3cf',emissive:'#ffd98a',emissiveIntensity:0}),0,1.2);
+inst(new T3.SphereGeometry(.5,8,6),bulbMat,bulbL,{receive:false});
+// rail
+const railBed=new T3.Mesh(new T3.PlaneGeometry(W+80,TS),M('#7b766f'));railBed.rotation.x=-Math.PI/2;railBed.position.set(W/2,.02,wz(0));scene.add(railBed);
+[-.75,.75].forEach(o=>{const r=new T3.Mesh(new T3.BoxGeometry(W+80,.14,.12),M('#b8bcc4'));r.position.set(W/2,.12,wz(0)+o);scene.add(r);});
+// river
+const waterTex=cvTex(64,128,(c,w,h)=>{c.fillStyle='#4f8fc0';c.fillRect(0,0,w,h);c.strokeStyle='rgba(255,255,255,.35)';c.lineWidth=2;for(let i=0;i<10;i++){const y=Math.random()*h,x=Math.random()*w;c.beginPath();c.moveTo(x,y);c.quadraticCurveTo(x+8,y-4,x+16,y);c.stroke();}});
+waterTex.wrapS=waterTex.wrapT=T3.RepeatWrapping;waterTex.repeat.set(1,8);
+const river=new T3.Mesh(new T3.PlaneGeometry(TS,(ROWS-1)*TS),new T3.MeshLambertMaterial({map:waterTex}));river.rotation.x=-Math.PI/2;river.position.set(wx(RIVER_X),.01,(1+ROWS)/2*TS);scene.add(river);
+// buildings (generic blocks)
+const winTex=cvTex(64,64,(c)=>{c.fillStyle='#ffffff';c.fillRect(0,0,64,64);c.fillStyle='#5a6577';for(let i=0;i<3;i++)c.fillRect(6+i*20,16,12,24);c.fillStyle='rgba(0,0,0,.12)';c.fillRect(0,58,64,6);});
+const emiTex=cvTex(64,64,(c)=>{c.fillStyle='#000';c.fillRect(0,0,64,64);for(let i=0;i<3;i++){c.fillStyle=Math.random()<.65?'#ffd27a':'#222';c.fillRect(6+i*20,16,12,24);}});
+const roofMat=M('#8d949d');
+const floorMats={};
+function floorMat(f){
+  if(floorMats[f])return floorMats[f];
+  const m=winTex.clone(),e=emiTex.clone();[m,e].forEach(t=>{t.needsUpdate=true;t.wrapS=t.wrapT=T3.RepeatWrapping;t.repeat.set(1,f);});
+  const side=night(new T3.MeshLambertMaterial({map:m,emissive:'#ffd58a',emissiveMap:e,emissiveIntensity:0}),0,.95);
+  return floorMats[f]=[side,side,roofMat,roofMat,side,side];
+}
+const BCOL=['#e7dccb','#d6d9dc','#c9d6e3','#efe4cf','#d9b9a4','#cfd7c8','#e3cfc4','#bfc6cf'];
+const bByF={};
+for(let y=1;y<ROWS;y++)for(let x=0;x<COLS;x++){
+  if(grid[y][x].t!=='block')continue;
+  const a=areaName(x,y);
+  let f;
+  if(a==='ひなた駅前')f=ri(3,4);else if(a==='西口オフィス街')f=ri(2,4);else if(a==='銀杏通り商店街')f=ri(1,2);else if(a==='のれん横丁')f=ri(1,2);else if(a==='川沿いの道')f=ri(2,3);else f=srand()<.3?ri(3,4):ri(1,2);
+  const h=f*3+.4,s=3.2+srand()*.5;
+  (bByF[f]=bByF[f]||[]).push({x:wx(x),y:0,z:wz(y),sx:s,sy:h,sz:s,c:pick(BCOL)});
+}
+const BLD=[];
+Object.keys(bByF).forEach(f=>{const m=inst(boxUp,floorMat(+f),bByF[f],{shadow:true});bByF[f].forEach((o,i)=>BLD.push({m,i,x:o.x,z:o.z,s:o.sx,h:o.sy,cur:o.sy}));});
+// lanterns in yokocho & arcade banners
+const lantL=[],banL=[];
+for(let y=1;y<ROWS;y++)for(let x=0;x<COLS;x++){
+  const t=grid[y][x].t;if(t!=='block'&&t!=='shop')continue;
+  for(const[dx,dy]of DIRS){if(!isRoad(x+dx,y+dy))continue;
+    if(x>=21&&srand()<.8)lantL.push({x:wx(x)+dx*1.9+(dy?-.9:0),y:2.7,z:wz(y)+dy*1.9+(dx?-.9:0),sx:.36,sy:.5,sz:.36});
+    if(y+dy===6&&x<=17&&!(dx))banL.push({x:wx(x)+(srand()-.5)*2,y:3.3,z:wz(y)+dy*1.7,sx:.7,sy:1.1,sz:.05,c:pick(['#e76f51','#2a9d8f','#e9c46a','#f4a261','#c1121f','#3a86ff'])});
+  }
+}
+const lantMat=night(new T3.MeshLambertMaterial({color:'#d62828',emissive:'#ff4b2b',emissiveIntensity:.1}),.1,1.3);
+inst(new T3.SphereGeometry(.5,8,6),lantMat,lantL,{receive:false});
+inst(box,new T3.MeshLambertMaterial({color:'#ffffff'}),banL,{receive:false});
+// park & shrine
+const treeTrunk=new T3.CylinderGeometry(.14,.2,1.4,6);treeTrunk.translate(0,.7,0);
+const treeTop=new T3.SphereGeometry(1,8,6);
+const parkL=[],shrL=[],trunkL=[],topL=[];
+for(let y=0;y<ROWS;y++)for(let x=0;x<COLS;x++){
+  const t=grid[y][x].t;
+  if(t==='park'){parkL.push({x:wx(x),y:.03,z:wz(y),sx:TS,sz:TS});if(!(x===11&&y===12)){const n=ri(1,2);for(let i=0;i<n;i++){const px=wx(x)+rnd(-1.3,1.3),pz=wz(y)+rnd(-1.3,1.3),s=rnd(.8,1.2);trunkL.push({x:px,z:pz,sy:s});topL.push({x:px,y:1.9*s,z:pz,sx:1.1*s,sy:1.1*s,sz:1.1*s,c:pick(['#5c9b4f','#6aa84f','#4f8a3f'])});}}}
+  if(t==='shrine'){shrL.push({x:wx(x),y:.03,z:wz(y),sx:TS,sz:TS});if(!(x===23&&y>=16)){const px=wx(x)+rnd(-1,1),pz=wz(y)+rnd(-1,1);trunkL.push({x:px,z:pz,sy:1.6});topL.push({x:px,y:3,z:pz,sx:1.5,sy:1.8,sz:1.5,c:'#3f6b3a'});}}
+}
+inst(plane,M('#86b56c'),parkL);inst(plane,M('#d4c8af'),shrL);
+inst(treeTrunk,M('#7a5a3a'),trunkL,{shadow:true});
+inst(treeTop,new T3.MeshLambertMaterial({color:'#ffffff'}),topL,{shadow:true});
+// fountain
+const fount=new T3.Mesh(new T3.CylinderGeometry(1.4,1.5,.5,16),M('#c9ccd1'));fount.position.set(wx(11),.25,wz(12));scene.add(fount);
+const fw=new T3.Mesh(new T3.CylinderGeometry(1.2,1.2,.05,16),new T3.MeshLambertMaterial({color:'#7fb6e0'}));fw.position.set(wx(11),.5,wz(12));scene.add(fw);
+// benches
+[[10,11],[12,13],[10,13]].forEach(([x,y])=>{const b=new T3.Mesh(box,M('#8a6a4a'));b.scale.set(1.6,.4,.5);b.position.set(wx(x),.45,wz(y));b.castShadow=true;scene.add(b);});
+// shrine hall & torii
+{const hall=new T3.Mesh(box,M('#b5523b'));hall.scale.set(3,2.2,2.6);hall.position.set(wx(23),1.1,wz(16)-.3);hall.castShadow=true;scene.add(hall);
+ const roof=new T3.Mesh(new T3.ConeGeometry(2.7,1.5,4),M('#3c3f46'));roof.rotation.y=Math.PI/4;roof.position.set(wx(23),2.95,wz(16)-.3);roof.castShadow=true;scene.add(roof);
+ const tr=M('#d1442c'),tz=wz(17)+1.5;
+ [-1.1,1.1].forEach(o=>{const p=new T3.Mesh(new T3.CylinderGeometry(.14,.16,3,8),tr);p.position.set(wx(23)+o,1.5,tz);p.castShadow=true;scene.add(p);});
+ const b1=new T3.Mesh(box,M('#2b2b2b'));b1.scale.set(3.4,.22,.32);b1.position.set(wx(23),3.05,tz);scene.add(b1);
+ const b2=new T3.Mesh(box,tr);b2.scale.set(2.8,.18,.24);b2.position.set(wx(23),2.55,tz);scene.add(b2);}
+// station
+{const st=new T3.Mesh(boxUp,M('#e8e2d6'));st.scale.set(31,6.5,3.4);st.position.set((wx(9)+wx(16))/2,0,wz(1));st.castShadow=true;st.receiveShadow=true;scene.add(st);
+ const gl=new T3.Mesh(new T3.PlaneGeometry(24,2.6),night(new T3.MeshLambertMaterial({color:'#9fc3dd',emissive:'#fff1c9',emissiveIntensity:.05}),.05,.9));gl.position.set((wx(9)+wx(16))/2,1.6,wz(1)+1.71);scene.add(gl);
+ const rf=new T3.Mesh(box,M('#5b6472'));rf.scale.set(32,.3,4);rf.position.set((wx(9)+wx(16))/2,6.6,wz(1));scene.add(rf);}
+const PICK=[];
+// office
+const BLD_EXTRA=[];
+{const o=new T3.Mesh(boxUp,night(new T3.MeshLambertMaterial({color:'#7fa8d6',emissive:'#ffe2a0',emissiveIntensity:0}),0,.35));o.scale.set(3.5,11,3.5);o.position.set(wx(3),0,wz(15));o.castShadow=true;scene.add(o);o.userData.inter=INTER.find(i=>i.kind==='office');PICK.push(o);BLD_EXTRA.push({mesh:o,x:wx(3),z:wz(15),h:11});}
+
+// ---- shops & spots ----
+const stripeTex={};
+function awningTex(col){return stripeTex[col]||(stripeTex[col]=cvTex(64,32,(c)=>{for(let i=0;i<8;i++){c.fillStyle=i%2?'#ffffff':col;c.fillRect(i*8,0,8,32);}}));}
+const winMat=night(new T3.MeshLambertMaterial({color:'#4a3b2a',emissive:'#ffc46b',emissiveIntensity:.25}),.25,1.25);
+const darkWin=M('#3a3f48');
+const AWN=['#d62828','#2a9d8f','#264653','#e76f51','#6d597a','#1d3557'];
+function makeSign(w=440,h=124){const c=document.createElement('canvas');c.width=w;c.height=h;const t=new T3.CanvasTexture(c);t.anisotropy=4;const sp=new T3.Sprite(new T3.SpriteMaterial({map:t,transparent:true,depthWrite:false}));sp.scale.set(5.2,5.2*h/w,1);sp.userData={c,t};return sp;}
+function drawSign(sp,{icon,name,sub,ring='#1d2a4a',fill='#ffffff',txt='#1d2a4a',subc='#56627c'}){
+  const {c,t}=sp.userData,x=c.getContext('2d'),w=c.width,h=c.height;
+  x.clearRect(0,0,w,h);rrect(x,5,5,w-10,h-10,20);x.fillStyle=fill;x.fill();x.lineWidth=7;x.strokeStyle=ring;x.stroke();
+  x.textBaseline='middle';x.textAlign='left';x.font=`58px ${EMOJI_FONT}`;x.fillText(icon,22,h/2+2);
+  let fs=36;x.font=`900 ${fs}px ${JP_FONT}`;while(x.measureText(name).width>w-120&&fs>20){fs-=2;x.font=`900 ${fs}px ${JP_FONT}`;}
+  x.fillStyle=txt;x.fillText(name,98,sub?h/2-16:h/2);
+  if(sub){x.font=`700 25px ${JP_FONT}`;x.fillStyle=subc;x.fillText(sub,98,h/2+24);}
+  t.needsUpdate=true;
+}
+const SHOPG=[];
+function buildFront(tx,ty,door,{col,awn,h=4.2,winM=winMat}){
+  const g=new T3.Group();g.position.set(wx(tx),0,wz(ty));g.rotation.y=Math.atan2(door[0]-tx,door[1]-ty);
+  const body=new T3.Mesh(boxUp,M(col));body.scale.set(3.4,h,3.4);body.castShadow=true;body.receiveShadow=true;g.add(body);
+  const roof=new T3.Mesh(box,M('#4a4f5a'));roof.scale.set(3.7,.3,3.7);roof.position.y=h+.15;roof.castShadow=true;g.add(roof);
+  const win=new T3.Mesh(new T3.PlaneGeometry(1.9,1.5),winM);win.position.set(-.55,1.45,1.71);g.add(win);
+  const door3=new T3.Mesh(new T3.PlaneGeometry(.85,2),M('#3b2f28'));door3.position.set(1.05,1,1.71);g.add(door3);
+  const noren=new T3.Mesh(new T3.PlaneGeometry(.95,.55),M(awn,{side:T3.DoubleSide}));noren.position.set(1.05,1.75,1.78);g.add(noren);
+  const aw=new T3.Mesh(box,new T3.MeshLambertMaterial({map:awningTex(awn)}));aw.scale.set(3.4,.08,1.1);aw.position.set(0,2.75,2.1);aw.rotation.x=.38;aw.castShadow=true;g.add(aw);
+  scene.add(g);SHOPG.push({g,x:wx(tx),z:wz(ty)});return {g,win};
+}
+SHOPS.forEach((s,i)=>{
+  const f=buildFront(s.x,s.y,s.door,{col:s.col,awn:AWN[i%AWN.length],h:s.x>=20?3.8:4.4});
+  s.win=f.win;{const it=INTER.find(i=>i.ref===s);f.g.userData.inter=it;PICK.push(f.g);}s.sign=makeSign();s.sign.position.set(wx(s.x)+(s.door[0]-s.x)*1.2,6,wz(s.y)+(s.door[1]-s.y)*1.2);scene.add(s.sign);s.sign.userData.inter=INTER.find(i=>i.ref===s);PICK.push(s.sign);s.signKey='';
+});
+SPOTS.forEach(p=>{
+  if(p.t==='office'){p.sign=makeSign();p.sign.position.set(wx(p.x)-2.4,3.4,wz(p.y)-2.6);scene.add(p.sign);p.sign.userData.inter=INTER.find(i=>i.ref===p);PICK.push(p.sign);drawSign(p.sign,{icon:'🏢',name:'営業所',sub:'日報を書いて退勤',ring:'#1d2a4a'});return;}
+  const conv=p.t==='conv';
+  buildFront(p.x,p.y,p.door,{col:conv?'#f4f6f8':'#d8c3a5',awn:conv?'#2a9d8f':'#3d6b45',h:conv?3.6:4,winM:conv?night(new T3.MeshLambertMaterial({color:'#e8f4ff',emissive:'#ffffff',emissiveIntensity:.5}),.5,1.1):winMat});
+  p.sign=makeSign();p.sign.position.set(wx(p.x)+(p.door[0]-p.x)*1.2,5.6,wz(p.y)+(p.door[1]-p.y)*1.2);scene.add(p.sign);p.sign.userData.inter=INTER.find(i=>i.ref===p);PICK.push(p.sign);
+  drawSign(p.sign,{icon:p.icon,name:p.name,sub:conv?'体力+15/5分':'体力+40/20分',ring:'#2f8f5b'});
+});
+{const s=makeSign();s.position.set(wx(12.5),8.6,wz(1)+1.5);s.scale.multiplyScalar(1.5);scene.add(s);drawSign(s,{icon:'🚉',name:'ひなた駅',sub:'JR・私鉄 のりかえ'});}
+{const s=makeSign();s.position.set(wx(23),5.2,wz(17)+2);scene.add(s);drawSign(s,{icon:'⛩️',name:'ひなた神社',sub:'1日1回お参りできる',ring:'#d1442c'});}
+function refreshSigns(){
+  SHOPS.forEach(s=>{
+    const st=status(s,G.time),ap=G.apos.find(a=>a.si===SHOPS.indexOf(s)&&a.day===G.day);const key=st.k+(s.refused?'r':'')+(ap?ap.time:'');
+    if(key===s.signKey)return;s.signKey=key;
+    const o={icon:s.icon,name:s.name,sub:`${st.label} ${st.mark}`};
+    if(st.k==='idle')o.ring='#2f8f5b';
+    else if(st.k==='peak')o.ring='#d6413a';
+    else if(st.k==='won'){o.ring='#f09000';o.fill='#ffe2b0';o.sub='受注済 ✓';}
+    else if(st.k==='holiday'||st.k==='lost'){o.ring='#8a93a3';o.fill='#dde1e7';o.subc='#d6413a';}
+    if(s.refused){o.sub='本日お断り';o.subc='#d6413a';}
+    if(ap&&!s.won){o.sub=`📅 ${fmtT(ap.time)} アポ`;o.ring='#f09000';o.subc='#b56d00';}
+    drawSign(s.sign,o);
+    s.win.material=(st.k==='holiday'||st.k==='lost'||st.k==='closed')?darkWin:winMat;
+  });
+}
+
+// ================= PEOPLE =================
+const PG={body:new T3.CylinderGeometry(.24,.29,.72,8),head:new T3.SphereGeometry(.19,10,8),hair:new T3.SphereGeometry(.205,10,6,0,Math.PI*2,0,Math.PI/2),
+  leg:new T3.BoxGeometry(.15,.66,.17),arm:new T3.BoxGeometry(.11,.56,.13),umb:new T3.ConeGeometry(.85,.35,10,1,true),tie:new T3.BoxGeometry(.08,.34,.04),bag:new T3.BoxGeometry(.42,.3,.1),apron:new T3.BoxGeometry(.5,.6,.05)};
+PG.leg.translate(0,-.33,0);PG.arm.translate(0,-.28,0);
+const SHIRT=['#e76f51','#2a9d8f','#e9c46a','#f4a261','#264653','#8d99ae','#f8f9fa','#6d597a','#b5838d','#457b9d','#a8dadc','#3a3a3a','#f8f9fa','#f8f9fa'];
+const PANTS=['#2f3e46','#1d3557','#6c584c','#495057','#22223b','#3d405b'];
+const SKIN=['#f1c9a5','#e0ac69','#c68642','#f6d7b0'];
+const HAIR=['#1b1b1b','#3b2a1a','#5a3825','#8d8d8d','#c9b18b','#1b1b1b'];
+const UMB=['#3a86ff','#ff006e','#8338ec','#2a9d8f','#f4a261','#222222'];
+const people=[];
+function person(o={}){
+  const g=new T3.Group();
+  const shirt=o.shirt||pick(SHIRT),pants=o.pants||pick(PANTS);
+  const body=new T3.Mesh(PG.body,M(shirt));body.position.y=1.04;body.castShadow=true;g.add(body);
+  const head=new T3.Mesh(PG.head,M(o.skin||pick(SKIN)));head.position.y=1.6;head.castShadow=true;g.add(head);
+  const hr=new T3.Mesh(PG.hair,M(o.hair||pick(HAIR)));hr.position.y=.03;head.add(hr);
+  const legL=new T3.Mesh(PG.leg,M(pants)),legR=new T3.Mesh(PG.leg,M(pants));legL.position.set(-.1,.7,0);legR.position.set(.1,.7,0);g.add(legL,legR);
+  const armM=M(o.arm||shirt);const armL=new T3.Mesh(PG.arm,armM),armR=new T3.Mesh(PG.arm,armM);armL.position.set(-.33,1.36,0);armR.position.set(.33,1.36,0);g.add(armL,armR);
+  if(o.tie){const t=new T3.Mesh(PG.tie,M(o.tie));t.position.set(0,1.2,.27);g.add(t);}
+  if(o.bag){const b=new T3.Mesh(PG.bag,M('#3b2f28'));b.position.set(0,-.55,0);armR.add(b);}
+  if(o.apron){const a=new T3.Mesh(PG.apron,M(typeof o.apron==='string'?o.apron:'#f2efe8'));a.position.set(0,.95,.27);g.add(a);}
+  if(o.hat==='chef'){const ht=new T3.Mesh(new T3.CylinderGeometry(.17,.2,.36,12),M('#ffffff'));ht.position.y=.3;head.add(ht);}
+  if(o.hat==='cap'){const ht=new T3.Mesh(new T3.CylinderGeometry(.21,.21,.12,12),M('#ffffff'));ht.position.y=.17;head.add(ht);}
+  if(o.hat==='band'){const ht=new T3.Mesh(new T3.TorusGeometry(.2,.035,6,16),M('#ffffff'));ht.rotation.x=Math.PI/2;ht.position.y=.07;head.add(ht);}
+  const umb=new T3.Mesh(PG.umb,M(pick(UMB),{side:T3.DoubleSide}));umb.position.y=2.2;umb.visible=false;g.add(umb);
+  g.userData={legL,legR,armL,armR,body,head,umb,phase:Math.random()*6};
+  scene.add(g);return g;
+}
+function animWalk(g,dt,speed){const u=g.userData;u.phase+=dt*speed*3.4;const s=Math.sin(u.phase)*.62;
+  u.legL.rotation.x=s;u.legR.rotation.x=-s;u.armL.rotation.x=-s*.75;u.armR.rotation.x=s*.75;u.body.position.y=1.04+Math.abs(Math.cos(u.phase))*.05;u.head.position.y=1.6+Math.abs(Math.cos(u.phase))*.05;}
+function animIdle(g,dt,talk){const u=g.userData;u.phase+=dt;
+  ['legL','legR','armL','armR'].forEach(k=>u[k].rotation.x*=.85);
+  u.body.position.y=1.04+Math.sin(u.phase*1.7)*.01;u.head.position.y=1.6;
+  if(talk){u.armR.rotation.x=-Math.max(0,Math.sin(u.phase*2.3))*.9;u.head.rotation.y=Math.sin(u.phase*.9)*.25;}}
+function turnTo(g,ang,dt,k=10){let d=ang-g.rotation.y;d=Math.atan2(Math.sin(d),Math.cos(d));g.rotation.y+=d*Math.min(1,dt*k);}
+// player
+const player=person({shirt:'#26365e',pants:'#1c2540',arm:'#26365e',skin:'#f1c9a5',hair:'#1b1b1b',tie:'#f09000',bag:true});
+const pRing=new T3.Mesh(new T3.RingGeometry(.55,.75,24),new T3.MeshBasicMaterial({color:'#f09000',transparent:true,opacity:.85}));pRing.rotation.x=-Math.PI/2;pRing.position.y=.06;scene.add(pRing);
+const pArrow=new T3.Mesh(new T3.ConeGeometry(.22,.45,4),new T3.MeshBasicMaterial({color:'#f09000'}));pArrow.rotation.x=Math.PI;scene.add(pArrow);
+// rival
+const rival=person({shirt:'#1b1b1b',pants:'#141414',arm:'#1b1b1b',tie:'#e0263c',bag:true,hair:'#1b1b1b'});rival.visible=false;
+const rTag=makeSign(220,90);rTag.scale.set(1.9,.78,1);scene.add(rTag);
+{const x=rTag.userData.c.getContext('2d');rrect(x,4,4,212,82,16);x.fillStyle='#e0263c';x.fill();x.fillStyle='#fff';x.font=`900 40px ${JP_FONT}`;x.textAlign='center';x.textBaseline='middle';x.fillText('他媒体',110,46);rTag.userData.t.needsUpdate=true;}
+// door highlight
+const doorRing=new T3.Mesh(new T3.RingGeometry(.9,1.15,32),new T3.MeshBasicMaterial({color:'#f09000',transparent:true,opacity:.9}));doorRing.rotation.x=-Math.PI/2;doorRing.position.y=.08;doorRing.visible=false;scene.add(doorRing);
+
+// pedestrians
+const peds=[];
+function pedTarget(){const h=G.time/60;let n=20;if(h<10)n=24;else if(h>=11.5&&h<13.5)n=36;else if(h>=17)n=34;return Math.round(n*(G.rain?.65:1)*(typeof QUAL!=='undefined'?QUAL[qLevel].ped:1));}
+function pedWeight(x,y){
+  const h=G.time/60,a=area(x),arc=y===6&&x<=17;let w=1;
+  if(h<10)w=y<=3?3:.8;
+  else if(h>=11.5&&h<13.5)w=a==='east'?.4:arc?3:1.8;
+  else if(h>=17)w=a==='east'?3:arc?1.5:.6;
+  else w=arc?2.2:1;
+  return w;
+}
+function pedPoint(tx,ty,d,side){
+  const g=grid[ty][tx];let off=g.t==='park'?rnd(-1,1):g.arcade?side*rnd(.6,1.6):side*1.5;
+  return {x:wx(tx)+(-d[1])*off,z:wz(ty)+d[0]*off};
+}
+function spawnPed(far){
+  for(let i=0;i<40;i++){
+    const x=ri(0,COLS-1),y=ri(1,ROWS-1);
+    if(!isWalk(x,y))continue;
+    if(Math.random()*3>pedWeight(x,y))continue;
+    if(far&&Math.hypot(wx(x)-G.x,wz(y)-G.z)<14)continue;
+    const d=pick(DIRS.filter(([dx,dy])=>isWalk(x+dx,y+dy)));if(!d)continue;
+    const office=Math.random()<(G.time<10*60||(G.time>=11.5*60&&G.time<13.5*60)?.5:.2);
+    const g=person(office?{shirt:'#f8f9fa',pants:pick(['#22223b','#2f3e46','#3d405b']),arm:pick(['#f8f9fa','#2f3e46']),tie:Math.random()<.5?pick(['#1d3557','#c1121f','#2a9d8f']):null,bag:Math.random()<.5}:{});
+    const side=Math.random()<.5?1:-1,p=pedPoint(x,y,d,side);
+    g.position.set(p.x,0,p.z);g.scale.setScalar(.01);
+    const q={g,tx:x,ty:y,d,side,tgt:p,speed:rnd(1.4,2.2)*(office?1.15:1),stop:0,grow:0,tipsy:area(x)==='east'&&G.time>=17.5*60&&Math.random()<.5};
+    g.userData.umb.visible=G.rain;peds.push(q);return;
+  }
+}
+function nextPedTile(p){
+  const [dx,dy]=p.d,opts=DIRS.filter(([ax,ay])=>isWalk(p.tx+ax,p.ty+ay)&&!(ax===-dx&&ay===-dy));
+  if(!isWalk(p.tx+dx,p.ty+dy)||(opts.length>1&&Math.random()<.3))p.d=opts.length?pick(opts):[-dx,-dy];
+  if(!isWalk(p.tx+p.d[0],p.ty+p.d[1]))p.d=[-p.d[0],-p.d[1]];
+  if(!isWalk(p.tx+p.d[0],p.ty+p.d[1]))return;
+  p.tx+=p.d[0];p.ty+=p.d[1];
+  if(Math.random()<.25)p.side=-p.side;
+  p.tgt=pedPoint(p.tx,p.ty,p.d,p.side);
+  if((grid[p.ty][p.tx].arcade||grid[p.ty][p.tx].t==='park')&&Math.random()<.12){p.stop=rnd(1.5,4);p.look=Math.random()*Math.PI*2;}
+}
+let spawnT=0;
+function updatePeds(dt){
+  spawnT-=dt;const tgt=pedTarget();
+  if(spawnT<=0){spawnT=.35;
+    if(peds.length<tgt)spawnPed(peds.length>8);
+    else if(peds.length>tgt+3){let fi=-1,fd=0;peds.forEach((p,i)=>{const d=Math.hypot(p.g.position.x-G.x,p.g.position.z-G.z);if(d>fd&&!p.leave){fd=d;fi=i;}});if(fi>=0)peds[fi].leave=true;}
+  }
+  for(let i=peds.length-1;i>=0;i--){
+    const p=peds[i],g=p.g;
+    if(p.leave){g.scale.multiplyScalar(Math.pow(.02,dt));if(g.scale.x<.05){scene.remove(g);peds.splice(i,1);}continue;}
+    if(p.grow<1){p.grow=Math.min(1,p.grow+dt*2.5);g.scale.setScalar(p.grow);}
+    g.userData.umb.visible=G.rain;
+    if(p.stop>0){p.stop-=dt;animIdle(g,dt,false);turnTo(g,p.look,dt,4);continue;}
+    const dx=p.tgt.x-g.position.x,dz=p.tgt.z-g.position.z,dist=Math.hypot(dx,dz);
+    let sp=p.speed*(G.rain?1.15:1);
+    const pd=Math.hypot(g.position.x-G.x,g.position.z-G.z);if(pd<.9)sp*=.3;
+    if(dist<.15){nextPedTile(p);continue;}
+    g.position.x+=dx/dist*sp*dt;g.position.z+=dz/dist*sp*dt;
+    turnTo(g,Math.atan2(dx,dz),dt);
+    animWalk(g,dt,sp);
+    if(p.tipsy)g.rotation.z=Math.sin(g.userData.phase*.5)*.08;
+  }
+}
+// chatting pairs & queues & shop staff
+const pairs=[];
+function placePair(pr){
+  const spots=[[8,2],[12,2],[14,2],[3,6],[10,6],[14,6],[22,6],[23,10],[26,10],[11,10],[2,10],[23,18]];
+  const [x,y]=pick(spots);const hz=ROAD_R.includes(y),off=(Math.random()<.5?1:-1)*1.6,along=rnd(-1.4,1.4);
+  const cx=wx(x)+(hz?along:off),cz=wz(y)+(hz?off:along);
+  pr.a.position.set(cx-.45*(hz?1:0),0,cz-.45*(hz?0:1));pr.b.position.set(cx+.45*(hz?1:0),0,cz+.45*(hz?0:1));
+  pr.a.rotation.y=Math.atan2(pr.b.position.x-pr.a.position.x,pr.b.position.z-pr.a.position.z);pr.b.rotation.y=pr.a.rotation.y+Math.PI;
+  pr.t=rnd(25,50);
+}
+for(let i=0;i<6;i++){const pr={a:person(),b:person(),t:0};placePair(pr);pairs.push(pr);}
+SHOPS.forEach(s=>{
+  const fx=s.door[0]-s.x,fz=s.door[1]-s.y,bx=wx(s.x)+fx*2.45,bz=wz(s.y)+fz*2.45;
+  s.queue=[0,1,2].map(i=>{const g=person();const along=1.05-i*.75;g.position.set(bx+(fz?along:0)+fx*.1*i,0,bz+(fx?along:0)+fz*.1*i);g.rotation.y=Math.atan2(-fx,-fz)+(i===1?.6:0);g.visible=false;return g;});
+  s.staff=person({apron:true,shirt:'#f2efe8',arm:'#f2efe8'});s.staff.position.set(bx-(fz?.9:0)+fx*.2,0,bz-(fx?.9:0)+fz*.2);s.staff.rotation.y=Math.atan2(fx,fz);s.staff.visible=false;
+});
+function updateCrowds(dt){
+  pairs.forEach(pr=>{pr.t-=dt;if(pr.t<=0&&Math.hypot(pr.a.position.x-G.x,pr.a.position.z-G.z)>16)placePair(pr);
+    const show=!G.rain||Math.random()<1;pr.a.visible=pr.b.visible=show;pr.a.userData.umb.visible=pr.b.userData.umb.visible=G.rain;
+    animIdle(pr.a,dt,true);animIdle(pr.b,dt,Math.sin(pr.a.userData.phase*.4)>0);});
+  SHOPS.forEach(s=>{const st=status(s,G.time);
+    const q=st.k==='peak';s.queue.forEach((g,i)=>{g.visible=q&&(i<2||s.seats>=30);if(g.visible){g.userData.umb.visible=G.rain;animIdle(g,dt,i===1);}});
+    s.staff.visible=st.k==='prep'&&!G.rain;if(s.staff.visible){const u=s.staff.userData;u.phase+=dt;u.armL.rotation.x=Math.sin(u.phase*3)*.5-.4;u.armR.rotation.x=Math.sin(u.phase*3)*.5-.4;}
+  });
+}
+// cars
+const cars=[];
+const CARC=['#f8f9fa','#1d3557','#c1121f','#adb5bd','#2a9d8f','#e9c46a','#343a40'];
+function makeCar(){
+  const g=new T3.Group(),c=pick(CARC);
+  const b=new T3.Mesh(box,M(c));b.scale.set(1.25,.6,2.5);b.position.y=.5;b.castShadow=true;g.add(b);
+  const cab=new T3.Mesh(box,M('#2b3442'));cab.scale.set(1.1,.5,1.3);cab.position.set(0,1.02,-.1);cab.castShadow=true;g.add(cab);
+  const hl=night(new T3.MeshBasicMaterial({color:'#fff7d6'}),0,1);
+  [-.42,.42].forEach(o=>{const l=new T3.Mesh(box,M('#fff3c4',{emissive:'#fff1b0',emissiveIntensity:0}));l.scale.set(.25,.14,.05);l.position.set(o,.55,1.26);g.add(l);nightMats.push({mat:l.material,d:0,n:1.2});});
+  const tl=new T3.Mesh(box,M('#a4161a',{emissive:'#ff2020',emissiveIntensity:0}));tl.scale.set(1.1,.12,.05);tl.position.set(0,.6,-1.26);g.add(tl);nightMats.push({mat:tl.material,d:0,n:.9});
+  scene.add(g);return g;
+}
+CAR_R.forEach(r=>[1,-1].forEach(dir=>{for(let k=0;k<1;k++)cars.push({g:makeCar(),h:true,line:r,dir,pos:rnd(0,W),v:0,max:rnd(5.5,7.5)});}));
+CAR_C.forEach(c=>[1,-1].forEach(dir=>cars.push({g:makeCar(),h:false,line:c,dir,pos:rnd(4,H),v:0,max:rnd(5.5,7.5)})));
+function carBlocked(c,ox,oz){
+  const lat=c.h?oz-wz(c.line):ox-wx(c.line),al=c.h?ox:oz,ahead=(al-c.pos)*c.dir;
+  return ahead>.5&&ahead<3.6&&Math.abs(lat)<1.25;
+}
+function updateCars(dt){
+  cars.forEach(c=>{
+    let block=carBlocked(c,G.x,G.z);
+    if(!block)for(const p of peds){if(carBlocked(c,p.g.position.x,p.g.position.z)){block=true;break;}}
+    if(!block)for(const o of cars){if(o!==c&&o.h===c.h&&o.line===c.line&&o.dir===c.dir){const a=(o.pos-c.pos)*c.dir;if(a>0&&a<4.2){block=true;break;}}}
+    const rp=rival.visible?rival.position:null;if(!block&&rp&&carBlocked(c,rp.x,rp.z))block=true;
+    c.v=lerp(c.v,block?0:c.max,Math.min(1,dt*(block?6:1.2)));
+    c.pos+=c.v*c.dir*dt;
+    const lim=c.h?W:H;if(c.pos>lim+6)c.pos=c.h?-6:2;if(c.pos<(c.h?-6:2))c.pos=lim+6;
+    if(c.h){c.g.position.set(c.pos,0,wz(c.line)-c.dir*.85);c.g.rotation.y=c.dir>0?Math.PI/2:-Math.PI/2;}
+    else{c.g.position.set(wx(c.line)+c.dir*.85,0,c.pos);c.g.rotation.y=c.dir>0?0:Math.PI;}
+  });
+}
+// train
+const train=new T3.Group();
+for(let i=0;i<4;i++){const car=new T3.Mesh(box,M('#f1f3f5'));car.scale.set(7.4,2.3,2.4);car.position.set(i*7.8,1.4,0);car.castShadow=true;train.add(car);
+  const st=new T3.Mesh(box,M('#f09000'));st.scale.set(7.45,.3,2.45);st.position.set(i*7.8,1.1,0);train.add(st);
+  const wn=new T3.Mesh(box,night(new T3.MeshLambertMaterial({color:'#5a6577',emissive:'#fff1c9',emissiveIntensity:0}),0,1));wn.scale.set(6.8,.7,2.46);wn.position.set(i*7.8,1.9,0);train.add(wn);}
+train.position.set(-60,0,wz(0));scene.add(train);let trainT=8,trainDir=1;
+function updateTrain(dt){
+  trainT-=dt;
+  if(trainT<=0){train.position.x+=trainDir*20*dt;
+    if((trainDir>0&&train.position.x>W+40)||(trainDir<0&&train.position.x<-70)){trainDir=-trainDir;trainT=rnd(20,40);}}
+}
+// rain
+const rainGeo=new T3.BufferGeometry();const RN=900;const rp=new Float32Array(RN*6);
+for(let i=0;i<RN;i++){const x=rnd(-30,30),y=rnd(0,26),z=rnd(-30,30);rp.set([x,y,z,x-.15,y-.9,z],i*6);}
+rainGeo.setAttribute('position',new T3.BufferAttribute(rp,3));
+const rainMesh=new T3.LineSegments(rainGeo,new T3.LineBasicMaterial({color:'#c9d6e8',transparent:true,opacity:.55}));rainMesh.visible=false;rainMesh.frustumCulled=false;scene.add(rainMesh);
+function setRain(on){rainMesh.visible=on;}
+function updateRain(dt){if(!rainMesh.visible)return;const a=rainGeo.attributes.position.array;for(let i=0;i<RN;i++){const o=i*6;a[o+1]-=dt*24;a[o+4]-=dt*24;if(a[o+4]<0){const y=26+Math.random()*4;a[o+1]=y;a[o+4]=y-.9;}}rainGeo.attributes.position.needsUpdate=true;rainMesh.position.set(G.x,0,G.z);}
+
+// ================= LIGHTING / SKY =================
+const SKY=[[9,'#cfe8ff',.95,'#fff6e8'],[12,'#a9d6ff',1.0,'#ffffff'],[15,'#bcd3f0',.9,'#fff1d6'],[16.5,'#f3c597',.7,'#ffc38a'],[17.4,'#d98a6c',.45,'#ff9a6a'],[18.1,'#454b80',.2,'#9aa6ff'],[19,'#1a1f3a',.12,'#7080d0']];
+const cA=new T3.Color(),cB=new T3.Color();
+function updateSky(){
+  const h=G.time/60;let i=0;while(i<SKY.length-2&&h>SKY[i+1][0])i++;
+  const a=SKY[i],b=SKY[i+1],t=clamp((h-a[0])/(b[0]-a[0]),0,1);
+  cA.set(a[1]).lerp(cB.set(b[1]),t);if(G.rain)cA.lerp(cB.set('#8f99a6'),.45);
+  scene.background=cA.clone();scene.fog.color.copy(cA);
+  const si=lerp(a[2],b[2],t)*(G.rain?.55:1);sun.intensity=si;sun.color.set(a[3]).lerp(cB.set(b[3]),t);
+  hemi.intensity=.35+si*.45;
+  const nt=clamp((h-17.2)/1.1,0,1);
+  nightMats.forEach(o=>{o.mat.emissiveIntensity=lerp(o.d,o.n,nt);});
+  const ang=lerp(-1.1,1.2,clamp((h-8)/11,0,1));
+  sun.position.set(G.x+Math.sin(ang)*40,30+Math.cos(ang)*18,G.z+18);sun.target.position.set(G.x,0,G.z);
+}
+
+// ================= CUTAWAY =================
+function occl(x,z){return z>G.z+1.2&&z<G.z+24&&Math.abs(x-G.x)<6.8;}
+function updateCutaway(dt){
+  const k=Math.min(1,dt*8),touched=new Set();
+  BLD.forEach(b=>{const tgt=occl(b.x,b.z)?Math.min(b.h,1.1):b.h;if(Math.abs(b.cur-tgt)>.01){b.cur=lerp(b.cur,tgt,k);
+    dummy.position.set(b.x,0,b.z);dummy.rotation.set(0,0,0);dummy.scale.set(b.s,b.cur,b.s);dummy.updateMatrix();b.m.setMatrixAt(b.i,dummy.matrix);touched.add(b.m);}});
+  touched.forEach(m=>m.instanceMatrix.needsUpdate=true);
+  BLD_EXTRA.forEach(b=>{const tgt=occl(b.x,b.z)?1.1:b.h;b.mesh.scale.y=lerp(b.mesh.scale.y,tgt,k);});
+  SHOPG.forEach(b=>{const tgt=occl(b.x,b.z)?.5:1;b.g.scale.y=lerp(b.g.scale.y,tgt,k);});
+}
+// ================= CAMERA / RESIZE =================
+let zoom=1;
+function resize(){const r=view.getBoundingClientRect();renderer.setSize(r.width,r.height,false);camera.aspect=r.width/Math.max(1,r.height);camera.updateProjectionMatrix();if(typeof V!=='undefined'&&V&&V.cam)fitInteriorCam();}
+new ResizeObserver(resize).observe(view);
+const camTarget=new T3.Vector3();
+function updateCamera(dt,snap){
+  const pk=camera.aspect<1?Math.min(1.7,.78/Math.max(camera.aspect,.42)):1;
+  const off=new T3.Vector3(0,19*zoom*pk,12*zoom*pk);camTarget.set(G.x,0,G.z);
+  const want=camTarget.clone().add(off);
+  if(snap)camera.position.copy(want);else camera.position.lerp(want,1-Math.exp(-dt*5));
+  camera.lookAt(G.x,1,G.z-1);
+}
+view.addEventListener('wheel',e=>{e.preventDefault();zoom=clamp(zoom*(e.deltaY>0?1.1:.9),.55,1.8);},{passive:false});
+$('#zin').onclick=()=>zoom=clamp(zoom*.85,.55,1.8);
+$('#zout').onclick=()=>zoom=clamp(zoom*1.18,.55,1.8);
+
+// ================= MINIMAP =================
+const mini=$('#mini'),mctx=mini.getContext('2d');let miniBase=null;
+function buildMiniBase(){
+  const c=document.createElement('canvas');c.width=560;c.height=400;const x=c.getContext('2d'),s=20;
+  x.fillStyle='#e9e4da';x.fillRect(0,0,560,400);
+  for(let ty=0;ty<ROWS;ty++)for(let tx=0;tx<COLS;tx++){
+    const g=grid[ty][tx],X=tx*s,Y=ty*s;
+    const col={road:g.arcade?'#e6c9a8':'#ffffff',bridge:'#ffffff',block:'#c8ccd2',rail:'#8b8680',station:'#b9b0a0',river:'#7fb2dc',park:'#a7d08c',shrine:'#d8cbb0',shop:'#c8ccd2',cafe:'#c8ccd2',conv:'#c8ccd2',office:'#8fa9c9'}[g.t]||'#c8ccd2';
+    x.fillStyle=col;x.fillRect(X,Y,s,s);
+  }
+  x.font=`900 15px ${JP_FONT}`;x.fillStyle='rgba(29,42,74,.55)';x.textAlign='center';
+  [['ひなた駅',12.5,1.6],['銀杏通り商店街',7,6.6],['のれん横丁',24,8.2],['公園',11.5,12.7],['神社',23.5,16.6],['西口オフィス街',4.5,16.9],['川',19.5,15.4]].forEach(([t,a,b])=>x.fillText(t,a*s,b*s));
+  x.font=`16px ${EMOJI_FONT}`;x.textBaseline='middle';
+  SPOTS.forEach(p=>x.fillText(p.icon,p.x*s+s/2,p.y*s+s/2));x.fillText('⛩️',23.5*s,16*s);
+  miniBase=c;
+}
+let miniBig=false;
+mini.addEventListener('click',e=>{
+  if(!miniBig||G.mode!=='play'){miniBig=!miniBig;mini.classList.toggle('big',miniBig);return;}
+  const r=mini.getBoundingClientRect(),tx=Math.floor((e.clientX-r.left)/r.width*COLS),ty=Math.floor((e.clientY-r.top)/r.height*ROWS);
+  let it=INTER.find(i=>i.tx===tx&&i.ty===ty)||INTER.filter(i=>Math.abs(i.tx-tx)+Math.abs(i.ty-ty)===1).sort((a,b)=>(a.kind==='shop'?0:1)-(b.kind==='shop'?0:1))[0];
+  if(it)navTo(it.tx,it.ty,it);else if(isWalk(tx,ty))navTo(tx,ty,null);
+  miniBig=false;mini.classList.remove('big');
+});
+function drawMini(){
+  if(!miniBase)buildMiniBase();
+  const s=20;mctx.drawImage(miniBase,0,0);
+  peds.forEach(p=>{mctx.fillStyle='rgba(60,70,90,.55)';mctx.fillRect(p.g.position.x/TS*s-2,p.g.position.z/TS*s-2,4,4);});
+  cars.forEach(c=>{mctx.fillStyle='#59606b';mctx.fillRect(c.g.position.x/TS*s-3,c.g.position.z/TS*s-3,6,6);});
+  SHOPS.forEach(sh=>{const st=status(sh,G.time),X=sh.x*s+s/2,Y=sh.y*s+s/2;
+    mctx.beginPath();mctx.arc(X,Y,7,0,Math.PI*2);
+    mctx.fillStyle=st.k==='won'?'#f09000':st.k==='holiday'||st.k==='lost'?'#9aa1ab':'#ffffff';mctx.fill();
+    mctx.lineWidth=3;mctx.strokeStyle=st.k==='idle'?'#2f8f5b':st.k==='peak'?'#d6413a':st.k==='won'?'#b56d00':'#1d2a4a';mctx.stroke();
+    if(sh.carry>0&&!sh.won&&!sh.lost){mctx.beginPath();mctx.arc(X,Y,10,-Math.PI/2,-Math.PI/2+Math.PI*2*clamp(sh.carry/100,0,1));mctx.strokeStyle='#f09000';mctx.lineWidth=2.5;mctx.stroke();}
+  });
+  G.apos.filter(a=>a.day===G.day).forEach(a=>{const sh=SHOPS[a.si],X=sh.x*s+s/2,Y=sh.y*s-6;mctx.fillStyle='#f09000';mctx.fillRect(X-22,Y-11,44,16);mctx.fillStyle='#1d2a4a';mctx.font=`700 12px ${JP_FONT}`;mctx.textAlign='center';mctx.textBaseline='middle';mctx.fillText(fmtT(a.time),X,Y-3);});
+  if(rival.visible){mctx.beginPath();mctx.arc(rival.position.x/TS*s,rival.position.z/TS*s,6,0,Math.PI*2);mctx.fillStyle='#e0263c';mctx.fill();mctx.strokeStyle='#fff';mctx.lineWidth=2;mctx.stroke();}
+  const px=G.x/TS*s,py=G.z/TS*s;mctx.save();mctx.translate(px,py);mctx.rotate(-player.rotation.y+Math.PI);
+  mctx.beginPath();mctx.moveTo(0,-11);mctx.lineTo(8,8);mctx.lineTo(0,4);mctx.lineTo(-8,8);mctx.closePath();mctx.fillStyle='#f09000';mctx.fill();mctx.strokeStyle='#1d2a4a';mctx.lineWidth=2;mctx.stroke();mctx.restore();
+  if(NAV){mctx.strokeStyle='#f09000';mctx.lineWidth=3;mctx.setLineDash([6,4]);mctx.beginPath();mctx.moveTo(px,py);for(let i=NAV.i;i<NAV.pts.length;i++)mctx.lineTo(NAV.pts[i][0]/TS*s,NAV.pts[i][1]/TS*s);mctx.stroke();mctx.setLineDash([]);}
+  if(miniBig){mctx.fillStyle='rgba(29,42,74,.85)';mctx.fillRect(0,372,560,28);mctx.fillStyle='#fff';mctx.font=`700 15px ${JP_FONT}`;mctx.textAlign='center';mctx.textBaseline='middle';mctx.fillText('行き先をタップすると自動で歩きます(店をタップすると入店まで)',280,386);}
+  // view frame
+  const vw=11*zoom*s/TS*4,vh=8*zoom*s/TS*4;mctx.strokeStyle='rgba(29,42,74,.5)';mctx.lineWidth=1.5;mctx.strokeRect(px-vw/2,py-vh*.75,vw,vh);
+}
+
+// ================= PLAYER MOVEMENT =================
+const keys=new Set();let joy={x:0,y:0};
+const isTyping=()=>V&&V.typed<V.line.length;
+addEventListener('keydown',e=>{
+  const k=e.key.toLowerCase();
+  if(G.mode==='visit'&&V){
+    const btns=[...document.querySelectorAll('#vbtns button:not([disabled])')];
+    if(/^[1-9]$/.test(k)){const b=btns[+k-1];if(b){e.preventDefault();b.click();}return;}
+    if(k===' '||k==='enter'){
+      if(document.activeElement&&document.activeElement.closest&&document.activeElement.closest('#vbtns'))return;
+      e.preventDefault();if(isTyping()){V.typed=V.line.length;return;}if(V.next&&btns[0])btns[0].click();return;}
+    if(k==='escape'){e.preventDefault();if(V.menu){V.menu=null;renderVisit();}return;}
+    return;
+  }
+  if(['arrowup','arrowdown','arrowleft','arrowright','w','a','s','d'].includes(k)){if(G.mode==='play'){e.preventDefault();keys.add(k);}}
+  else if(k==='shift'){keys.add('shift');}
+  else if((k==='e'||k===' '||k==='enter')&&G.mode==='play'&&NEAR&&!G.paused){e.preventDefault();interact();}
+  else if((k==='p'||k==='escape')&&(G.mode==='play')){e.preventDefault();togglePause();}
+  else if(k==='m'&&G.mode==='play'){miniBig=!miniBig;mini.classList.toggle('big',miniBig);}
+});
+addEventListener('keyup',e=>keys.delete(e.key.toLowerCase()));
+addEventListener('blur',()=>keys.clear());
+// pause
+function togglePause(force){
+  G.paused=force!==undefined?force:!G.paused;keepAwake(!G.paused&&G.mode==='play');if(G.paused)saveGame();
+  $('#pauseOv').hidden=!G.paused;$('#pauseBtn').textContent=G.paused?'▶ 再開':'⏸ 一時停止';$('#pauseBtn').setAttribute('aria-pressed',G.paused);
+}
+$('#pauseBtn').onclick=()=>{if(G.mode==='play')togglePause();};
+$('#pauseOv').onclick=()=>togglePause(false);
+// ---- navigation (tap / click to move) ----
+let NAV=null;
+const navGeo=new T3.BufferGeometry();
+const navLine=new T3.Line(navGeo,new T3.LineDashedMaterial({color:0xf09000,dashSize:.55,gapSize:.35,linewidth:2}));navLine.frustumCulled=false;navLine.visible=false;scene.add(navLine);
+const navMark=new T3.Mesh(new T3.RingGeometry(.5,.8,28),new T3.MeshBasicMaterial({color:'#f09000',transparent:true,opacity:.9,side:T3.DoubleSide}));navMark.rotation.x=-Math.PI/2;navMark.visible=false;scene.add(navMark);
+function bfsWalk(sx,sy,goal){
+  const key=(x,y)=>y*COLS+x,gk=key(goal[0],goal[1]),prev=new Map([[key(sx,sy),-1]]),q=[[sx,sy]];
+  while(q.length){const [x,y]=q.shift();
+    if(key(x,y)===gk){const p=[];let k=gk;while(k!==key(sx,sy)){p.unshift([k%COLS,Math.floor(k/COLS)]);k=prev.get(k);}return p;}
+    for(const[dx,dy]of DIRS){const nx=x+dx,ny=y+dy;if(isWalk(nx,ny)&&!prev.has(key(nx,ny))){prev.set(key(nx,ny),key(x,y));q.push([nx,ny]);}}}
+  return null;
+}
+function navTo(tx,ty,inter){
+  if(G.mode!=='play')return;
+  const sx=Math.floor(G.x/TS),sy=Math.floor(G.z/TS),goal=inter?inter.door:[tx,ty];
+  if(!isWalk(goal[0],goal[1])){toast('そこへは歩いて行けない');return;}
+  const path=bfsWalk(sx,sy,goal);if(!path){toast('そこへは歩いて行けない');return;}
+  const pts=[];
+  if(Math.hypot(G.x-wx(sx),G.z-wz(sy))>.7&&path.length)pts.push([wx(sx),wz(sy)]);
+  path.forEach(([x,y])=>pts.push([wx(x),wz(y)]));
+  if(inter){const fx=inter.tx-inter.door[0],fz=inter.ty-inter.door[1];pts.push([wx(inter.door[0])+fx*.9,wz(inter.door[1])+fz*.9]);}
+  else if(!path.length)pts.push([wx(tx),wz(ty)]);
+  NAV={pts,i:0,target:inter||null,label:inter?inter.ref.name:areaName(tx,ty)};
+  const [lx,lz]=pts[pts.length-1];navMark.position.set(lx,.09,lz);navMark.visible=true;navLine.visible=true;updateNavLine();
+  $('#navChip').hidden=false;$('#navTxt').textContent=`${inter?inter.ref.icon+' ':''}${NAV.label}へ移動中`;
+  if(G.paused)togglePause(false);
+}
+function clearNav(){NAV=null;navLine.visible=false;navMark.visible=false;$('#navChip').hidden=true;}
+function updateNavLine(){
+  if(!NAV)return;const arr=[G.x,.14,G.z];for(let i=NAV.i;i<NAV.pts.length;i++)arr.push(NAV.pts[i][0],.14,NAV.pts[i][1]);
+  navGeo.setAttribute('position',new T3.Float32BufferAttribute(arr,3));navLine.computeLineDistances();
+}
+$('#navX').onclick=clearNav;
+// picking targets in the 3D town
+function tapNav(cx,cy){
+  const r=renderer.domElement.getBoundingClientRect();ptr.set(((cx-r.left)/r.width)*2-1,-((cy-r.top)/r.height)*2+1);
+  ray.setFromCamera(ptr,camera);ray.camera=camera;
+  const hit=ray.intersectObjects(PICK,true).find(h=>{let o=h.object;while(o&&!o.userData.inter)o=o.parent;return o&&o.visible!==false;});
+  if(hit){let o=hit.object;while(!o.userData.inter)o=o.parent;const it=o.userData.inter;navTo(it.tx,it.ty,it);return;}
+  const v=new T3.Vector3();if(!ray.ray.intersectPlane(new T3.Plane(new T3.Vector3(0,1,0),0),v))return;
+  const tx=Math.floor(v.x/TS),ty=Math.floor(v.z/TS);
+  const it=INTER.find(i=>i.tx===tx&&i.ty===ty);
+  if(it){navTo(tx,ty,it);return;}
+  if(isWalk(tx,ty)){navTo(tx,ty,null);return;}
+  let best=null,bd=9;for(let y=ty-2;y<=ty+2;y++)for(let x=tx-2;x<=tx+2;x++){if(!isWalk(x,y))continue;const d=Math.hypot(wx(x)-v.x,wz(y)-v.z);if(d<bd){bd=d;best=[x,y];}}
+  if(best)navTo(best[0],best[1],null);
+}
+// floating joystick + tap
+{const j=$('#joy'),kn=$('#knob'),cvEl=renderer.domElement;let st=null;
+ cvEl.addEventListener('pointerdown',e=>{if(G.mode!=='play'||G.paused)return;st={id:e.pointerId,x:e.clientX,y:e.clientY,t:performance.now(),drag:false};try{cvEl.setPointerCapture(e.pointerId);}catch(_){}});
+ cvEl.addEventListener('pointermove',e=>{if(!st||e.pointerId!==st.id)return;let dx=e.clientX-st.x,dy=e.clientY-st.y;
+   if(!st.drag&&Math.hypot(dx,dy)>14){st.drag=true;clearNav();const vr=view.getBoundingClientRect();j.style.left=(st.x-vr.left-59)+'px';j.style.top=(st.y-vr.top-59)+'px';j.classList.add('on');}
+   if(st.drag){const m=Math.hypot(dx,dy),lim=48;if(m>lim){dx*=lim/m;dy*=lim/m;}kn.style.transform=`translate(${dx}px,${dy}px)`;joy={x:dx/lim,y:dy/lim};}});
+ const end=e=>{if(!st||e.pointerId!==st.id)return;if(!st.drag&&performance.now()-st.t<600&&e.type==='pointerup')tapNav(e.clientX,e.clientY);
+   st=null;joy={x:0,y:0};kn.style.transform='';j.classList.remove('on');};
+ cvEl.addEventListener('pointerup',end);cvEl.addEventListener('pointercancel',end);}
+function canStand(x,z){const r=.38;return [[r,r],[-r,r],[r,-r],[-r,-r]].every(([a,b])=>isWalk(Math.floor((x+a)/TS),Math.floor((z+b)/TS)));}
+// corner assist: when blocked, slide toward the lane that opens in the wanted direction
+function assist(ix,iz,sp,dt){
+  const tx=Math.floor(G.x/TS),ty=Math.floor(G.z/TS);
+  if(Math.abs(ix)>=Math.abs(iz)&&ix){const d=Math.sign(ix);let best=null;
+    for(const row of [ty,ty-1,ty+1])if(isWalk(tx+d,row)&&isWalk(tx,row)){const off=wz(row)-G.z;if(Math.abs(off)<3.2&&(!best||Math.abs(off)<Math.abs(best)))best=off;}
+    if(best!==null){const nz=G.z+Math.sign(best)*Math.min(Math.abs(best),sp*dt);if(canStand(G.x,nz)){G.z=nz;return true;}}}
+  if(Math.abs(iz)>Math.abs(ix)&&iz){const d=Math.sign(iz);let best=null;
+    for(const col of [tx,tx-1,tx+1])if(isWalk(col,ty+d)&&isWalk(col,ty)){const off=wx(col)-G.x;if(Math.abs(off)<3.2&&(!best||Math.abs(off)<Math.abs(best)))best=off;}
+    if(best!==null){const nx=G.x+Math.sign(best)*Math.min(Math.abs(best),sp*dt);if(canStand(nx,G.z)){G.x=nx;return true;}}}
+  return false;
+}
+let walkedFor=0;
+function updatePlayer(dt){
+  let ix=0,iz=0,manual=false;
+  if(G.mode==='play'&&!G.paused){
+    if(keys.has('arrowleft')||keys.has('a'))ix-=1;if(keys.has('arrowright')||keys.has('d'))ix+=1;
+    if(keys.has('arrowup')||keys.has('w'))iz-=1;if(keys.has('arrowdown')||keys.has('s'))iz+=1;
+    if(Math.hypot(joy.x,joy.y)>.15){ix=joy.x;iz=joy.y;}
+    manual=Math.hypot(ix,iz)>.01;
+    if(manual&&NAV)clearNav();
+    if(!manual&&NAV){
+      const [px,pz]=NAV.pts[NAV.i],dx=px-G.x,dz=pz-G.z,d=Math.hypot(dx,dz);
+      if(d<.3){NAV.i++;if(NAV.i>=NAV.pts.length){const t=NAV.target;clearNav();if(t){NEAR=findNear();if(NEAR===t)interact();}}}
+      else{ix=dx/d;iz=dz/d;}
+      if(NAV)updateNavLine();
+    }
+  }
+  const m=Math.hypot(ix,iz);
+  if(m>.01){
+    ix/=Math.max(1,m);iz/=Math.max(1,m);
+    let sp=4.2*(G.rain?.78:1);if(G.stamina<20)sp*=.75;if(G.stamina<=0)sp*=.75;
+    const run=keys.has('shift')&&G.stamina>0;if(run)sp*=1.5;
+    let crowd=false;for(const p of peds){if(Math.abs(p.g.position.x-G.x)<.8&&Math.abs(p.g.position.z-G.z)<.8){crowd=true;break;}}
+    if(crowd)sp*=.6;
+    const nx=G.x+ix*sp*dt,nz=G.z+iz*sp*dt;
+    if(canStand(nx,nz)){G.x=nx;G.z=nz;}
+    else if(!assist(ix,iz,sp,dt)){if(canStand(nx,G.z))G.x=nx;else if(canStand(G.x,nz))G.z=nz;}
+    const d=sp*dt*Math.min(1,m);G.stamina=clamp(G.stamina-d*(G.rain?.2:.125)*(run?2:1),0,100);
+    turnTo(player,Math.atan2(ix,iz),dt,12);animWalk(player,dt,sp);walkedFor+=dt;
+  } else animIdle(player,dt,false);
+  player.position.set(G.x,0,G.z);player.userData.umb.visible=G.rain;
+  pRing.position.set(G.x,.06,G.z);pArrow.position.set(G.x,2.55+Math.sin(performance.now()/300)*.12,G.z);
+  if(navMark.visible)navMark.scale.setScalar(1+Math.sin(performance.now()/220)*.1);
+  const an=areaName(Math.floor(G.x/TS),Math.floor(G.z/TS));
+  if(an!==G.areaName){G.areaName=an;if(G.mode==='play'){const b=$('#banner');b.textContent=an;b.classList.add('show');clearTimeout(b._t);b._t=setTimeout(()=>b.classList.remove('show'),1800);}}
+}
+let NEAR=null;
+function findNear(){let best=null,bd=2.6;INTER.forEach(i=>{const d=Math.hypot(i.px-G.x,i.pz-G.z);if(d<bd){bd=d;best=i;}});return best;}
+function interact(){
+  const n=NEAR;if(!n)return;keys.clear();joy={x:0,y:0};$('#knob').style.transform='';clearNav();
+  if(n.kind==='shop')enterShop(n.ref);
+  else if(n.kind==='cafe')enterCafe();
+  else if(n.kind==='conv')enterConv();
+  else if(n.kind==='office')enterOffice();
+  else if(n.kind==='shrine')enterShrine();
+  else if(n.kind==='station')toast('ひなた駅。改札前は人の流れが絶えない');
+  renderAll();
+}
+$('#actBtn').onclick=()=>{if(G.mode==='play')interact();};
+
+// ================= PLACES =================
+function enterCafe(){if(G.stamina>=95){toast('まだ元気。カフェは後回しでいい');return;}pass(20);G.stamina=clamp(G.stamina+40,0,100);toast('☕ ひと休み。体力+40(20分)');}
+function enterConv(){if(G.stamina>=95){toast('コンビニ。今は特に用はない');return;}pass(5);G.stamina=clamp(G.stamina+15,0,100);toast('🏪 おにぎりと缶コーヒー。体力+15(5分)');}
+function enterShrine(){if(G.pray){toast('今日はもうお参りした');return;}G.pray=true;pass(5);toast('⛩️ お参りした。今日はクロージングが少し決まりやすい');}
+function enterOffice(){
+  G.mode='confirm';
+  card(`<h3>営業所</h3><p>いま ${fmtT(G.time)}。日報を書いて今日を締めますか?</p>${kpiTable(G.today)}
+  <div class="row"><button class="btn" id="bk">まだ回る</button><button class="btn pri" id="go">日報を書いて退勤</button></div>`);
+  $('#bk').onclick=()=>{G.mode='play';closeCard();};
+  $('#go').onclick=()=>{addLog('営業所に戻って日報を作成');endDay();};
+}
+function msgCard(title,body,btn='OK'){
+  G.mode='msg';
+  card(`<h3>${title}</h3>${body}<div class="row"><button class="btn pri full" id="ok">${btn}</button></div>`);
+  $('#ok').onclick=()=>{G.mode='play';closeCard();renderAll();checkEnd();};$('#ok').focus();
+}
+// (visit code below)
+// ================= VISIT (店内) =================
+let V=null;
+const GREET={polite:{label:'丁寧に名乗る',line:'お忙しいところ失礼します。食べログの営業で伺いました'},cheer:{label:'明るく声をかける',line:'こんにちは!食べログです。いつもお世話になってます!'},short:{label:'用件から言う',line:'食べログです。3分だけお時間いただけますか?'}};
+const GREET_LIKE={人情派:'cheer',数字派:'short',職人気質:'short',慎重派:'polite',新しもの好き:'cheer'};
+const MENU={洋食:['オムライス 1,100','ハンバーグ 1,300','ナポリタン 950'],ラーメン:['煮干しそば 900','つけ麺 1,000','味玉 150'],中華そば:['中華そば 800','餃子 450','チャーハン 750'],カレー:['チキンカレー 1,100','あいがけ 1,400','ラッシー 400'],定食:['焼き魚定食 950','生姜焼き定食 900','日替わり 850'],カフェ:['季節のパン 300〜','ランチプレート 1,200','カフェラテ 550'],イタリアン:['パスタランチ 1,300','マルゲリータ 1,600','グラスワイン 700'],寿司:['おまかせ 8,800','上にぎり 4,400','地魚つまみ 1,800'],焼肉:['上カルビ 1,680','タン塩 1,480','生ビール 600'],韓国料理:['サムギョプサル 1,800','スンドゥブ 1,100','マッコリ 600'],ビストロ:['前菜盛り合わせ 1,800','鴨のロースト 2,800','グラスワイン 800'],割烹:['刺身盛り 2,200','季節の椀 1,200','日本酒 一合 800'],焼鳥:['おまかせ5本 1,200','つくね 280','ハイボール 500'],海鮮居酒屋:['刺身五点盛り 1,980','漁師焼き 1,280','生ビール 580'],居酒屋:['唐揚げ 680','ポテトサラダ 480','生ビール 550'],もつ焼き:['もつ焼き5本 900','煮込み 550','ホッピー 500'],天ぷら:['天ぷら定食 1,800','おまかせコース 6,600','穴子天 900']};
+const UNIT={洋食:1500,ラーメン:1000,中華そば:900,カレー:1200,定食:1000,カフェ:1200,イタリアン:3500,寿司:12000,焼肉:5000,韓国料理:3500,ビストロ:6000,割烹:7000,焼鳥:4000,海鮮居酒屋:4500,居酒屋:3500,もつ焼き:3000,天ぷら:6000};
+const NEED_DETAIL={予約:n=>`週末のピークだと、出られない電話が${n}本はあると思う`,集客:(n,s)=>`平日の夜は${s.seats}席あって、埋まるのは${s.seats-n}席くらいかな`,求人:n=>`あと${n}人いれば回るんだけどね。今は休みもろくに取れてない`};
+const NEED_DEEP={予約:'せっかく来たいって言ってくれる人を、電話に出られないだけで逃すのが一番悔しいんだよ',集客:'常連さんもみんな年を取ってきてね。このままじゃ5年後が見えないんだよ',求人:'正直、体がもたない。家族ともずっと出かけてないしね'};
+const HOT_TOPIC={baseball:{label:'壁のカレンダー',kind:'poster',title:'球団カレンダー',icon:'⚾',opt:{grid:1,marks:1},note:'⚾ 野球好き',text:'球団のカレンダー。試合の日に赤丸が付いている。野球の話は盛り上がりそうだ'},
+ soccer:{label:'壁のマフラー',kind:'scarf',note:'⚽ サッカー好き',text:'地元クラブのタオルマフラーが飾ってある。スタジアムに通っていそうだ'},
+ fish:{label:'壁の魚拓',kind:'poster',title:'ブリ 82cm',icon:'🐟',opt:{},note:'🎣 釣り好き',text:'大きな魚拓が飾ってある。日付は先月。釣りが趣味のようだ'},
+ town:{label:'貼られたチラシ',kind:'poster',title:'駅前再開発 説明会',icon:'🏗️',opt:{},note:'🏗️ 再開発に関心',text:'再開発の説明会のチラシに付箋とメモ。街の変化を気にしているようだ'},
+ food:{label:'仕入れの木箱',kind:'crate',note:'🐟 食材へのこだわり',text:'産地直送の木箱が積まれている。仕入れへのこだわりが強そうだ'}};
+const HOT_NEED={予約:{label:'カウンターの電話',kind:'phone',note:'📞 予約は電話と手書き',text:'電話の横に、書き込みでびっしりの予約ノート。予約は手書きで管理しているようだ'},
+ 求人:{label:'色あせた貼り紙',kind:'poster',title:'アルバイト募集',icon:'📝',opt:{bg:'#f3e7c4',faded:1},note:'📝 人が足りていない?',text:'「アルバイト募集」の貼り紙が日焼けして色あせている。長いこと人が見つかっていないようだ'},
+ 集客:{label:'手書きのPOP',kind:'poster',title:'平日夜 1杯サービス',icon:'🍺',opt:{bg:'#fff3b0'},note:'🍺 平日の集客に苦戦?',text:'「平日夜限定 1杯サービス」の手書きPOP。平日の客入りに苦戦しているのかもしれない'}};
+const HOT_OBJ={価格:{label:'電卓と請求書',kind:'bills',note:'💴 コストに敏感',text:'電卓の横に請求書の束。仕入れ値の値上げが続いて、出費に敏感になっていそうだ'},
+ 効果:{label:'窓のステッカー跡',kind:'sticker',note:'🩹 媒体で失敗した過去?',text:'窓に古い媒体ステッカーをはがした跡。以前ほかの媒体に載せて、やめたらしい'},
+ 他媒体:{label:'レジ横のタブレット',kind:'tablet',note:'📱 他サイトを利用中',text:'別のグルメサイトの予約管理タブレット。すでに他の媒体を使っている'},
+ 手間:{label:'積まれた書類',kind:'papers',note:'🗂️ 事務に手が回らない',text:'手つかずの書類が積まれている。ひとりで回していて、事務まで手が回らないようだ'}};
+const HOT_MENU={label:'壁のお品書き',kind:'menu',note:'📋 看板メニューを確認',text:''};
+function hotSpec(s,id){return id==='topic'?HOT_TOPIC[s.topic]:id==='need'?HOT_NEED[s.need]:id==='obj'?HOT_OBJ[s.obj]:HOT_MENU;}
+const OUTFIT=g=>{
+  if(/寿司|割烹|天ぷら/.test(g))return {shirt:'#f4f4ef',arm:'#f4f4ef',pants:'#2b2b2b',hat:'cap'};
+  if(/ラーメン|中華/.test(g))return {shirt:'#222222',arm:'#222222',pants:'#2b2b2b',hat:'band'};
+  if(/イタリアン|ビストロ|洋食/.test(g))return {shirt:'#f7f7f2',arm:'#f7f7f2',pants:'#3a3a3a',hat:'chef'};
+  if(/焼鳥|もつ|居酒屋|海鮮/.test(g))return {shirt:'#22356b',arm:'#22356b',pants:'#1f1f1f',hat:'band'};
+  if(/焼肉|韓国/.test(g))return {shirt:'#1f1f1f',arm:'#1f1f1f',pants:'#1f1f1f',apron:'#7a1f1f'};
+  return {shirt:'#e9e4d8',arm:'#e9e4d8',pants:'#4a4a4a',apron:'#4c6a4f'};
+};
+const ITEX=[];
+function vtex(w,h,fn){const t=cvTex(w,h,fn);ITEX.push(t);return t;}
+function vmat(o){const m=new T3.MeshLambertMaterial(o);ITEX.push(m);return m;}
+const floorTex=cvTex(128,128,(c)=>{for(let i=0;i<8;i++){c.fillStyle=i%2?'#7d5f43':'#94735a';c.fillRect(0,i*16,128,15);c.fillStyle='#5e4632';c.fillRect(0,i*16+15,128,1);}});floorTex.wrapS=floorTex.wrapT=T3.RepeatWrapping;floorTex.repeat.set(3,3);
+function fitText(c,t,max,size,weight='900'){let fs=size;c.font=`${weight} ${fs}px ${JP_FONT}`;while(c.measureText(t).width>max&&fs>12){fs-=2;c.font=`${weight} ${fs}px ${JP_FONT}`;}}
+function paperTex(title,icon,o={}){return vtex(256,320,(c,w,h)=>{
+  c.fillStyle=o.bg||'#fbf7ee';c.fillRect(0,0,w,h);c.strokeStyle='rgba(0,0,0,.18)';c.lineWidth=6;c.strokeRect(3,3,w-6,h-6);
+  if(o.grid){c.strokeStyle='rgba(0,0,0,.25)';c.lineWidth=2;for(let i=0;i<=7;i++){c.beginPath();c.moveTo(20+i*31,160);c.lineTo(20+i*31,300);c.stroke();}for(let j=0;j<=5;j++){c.beginPath();c.moveTo(20,160+j*28);c.lineTo(237,160+j*28);c.stroke();}
+    if(o.marks)for(let k=0;k<6;k++){c.strokeStyle='#d62828';c.lineWidth=4;c.beginPath();c.arc(35+ri(0,6)*31,174+ri(0,4)*28,10,0,7);c.stroke();}}
+  c.textAlign='center';c.textBaseline='middle';c.font=`${o.grid?64:110}px ${EMOJI_FONT}`;c.fillText(icon||'',w/2,o.grid?62:118);
+  c.fillStyle='#1d2a4a';fitText(c,title,w-24,30);c.fillText(title,w/2,o.grid?128:250);
+  if(o.faded){c.fillStyle='rgba(240,215,150,.5)';c.fillRect(0,0,w,h);}});}
+function mkHotObj(s,spec){
+  const g=new T3.Group();
+  if(spec.kind==='poster'){const m=new T3.Mesh(new T3.PlaneGeometry(.8,1),vmat({map:paperTex(spec.title,spec.icon,spec.opt||{})}));g.add(m);
+    if(spec.icon==='🐟'){const rod=new T3.Mesh(new T3.CylinderGeometry(.015,.03,2.4,6),M('#3b2f28'));rod.position.set(.75,-.6,.2);rod.rotation.z=-.25;g.add(rod);}}
+  else if(spec.kind==='scarf'){const t=vtex(256,32,(c)=>{for(let i=0;i<16;i++){c.fillStyle=i%2?'#f2c80f':'#1d4ea3';c.fillRect(i*16,0,16,32);}c.fillStyle='#fff';c.font=`900 19px ${JP_FONT}`;c.textAlign='center';c.textBaseline='middle';c.fillText('HINATA FC',128,17);});
+    const m=new T3.Mesh(new T3.PlaneGeometry(1.8,.24),vmat({map:t,side:T3.DoubleSide}));g.add(m);
+    [-.9,.9].forEach(x=>{const f=new T3.Mesh(new T3.PlaneGeometry(.22,.45),vmat({color:'#1d4ea3',side:T3.DoubleSide}));f.position.set(x,-.3,0);g.add(f);});}
+  else if(spec.kind==='crate'){const t=vtex(128,96,(c)=>{c.fillStyle='#b88a55';c.fillRect(0,0,128,96);c.fillStyle='rgba(0,0,0,.12)';for(let i=0;i<96;i+=24)c.fillRect(0,i,128,3);c.fillStyle='#3b2a1a';c.font=`900 24px ${JP_FONT}`;c.textAlign='center';c.textBaseline='middle';c.fillText('産地直送',64,48);});
+    const mt=vmat({map:t});[0,1].forEach(i=>{const b=new T3.Mesh(box,mt);b.scale.set(.8,.45,.55);b.position.set(i*.12,.225+i*.45,0);b.rotation.y=i*.25;g.add(b);});}
+  else if(spec.kind==='phone'){const base=new T3.Mesh(box,M('#e8e4dc'));base.scale.set(.3,.1,.24);base.position.y=.05;g.add(base);
+    const hs=new T3.Mesh(box,M('#d0c9bb'));hs.scale.set(.34,.07,.09);hs.position.set(0,.13,-.05);g.add(hs);g.userData.ring=hs;
+    const nt=vtex(128,160,(c)=>{c.fillStyle='#f6f1e3';c.fillRect(0,0,128,160);c.strokeStyle='#5a6577';c.lineWidth=2;for(let y=12;y<160;y+=12){c.beginPath();c.moveTo(8,y);c.lineTo(8+Math.random()*110,y);c.stroke();}});
+    const nb=new T3.Mesh(box,[M('#e9e2cf'),M('#e9e2cf'),vmat({map:nt}),M('#e9e2cf'),M('#e9e2cf'),M('#e9e2cf')]);nb.scale.set(.32,.03,.42);nb.position.set(.42,.015,0);nb.rotation.y=-.2;g.add(nb);}
+  else if(spec.kind==='bills'){const calc=new T3.Mesh(box,M('#5a5f66'));calc.scale.set(.2,.04,.28);calc.position.set(0,.02,0);g.add(calc);
+    for(let i=0;i<6;i++){const p=new T3.Mesh(box,M(i%2?'#f6f6f2':'#efe9da'));p.scale.set(.3,.012,.42);p.position.set(.35,.01+i*.013,0);p.rotation.y=rnd(-.2,.2);g.add(p);}}
+  else if(spec.kind==='sticker'){const t=vtex(128,128,(c)=>{c.globalAlpha=.55;c.beginPath();c.arc(64,64,58,0,7);c.fillStyle='#e9e2cf';c.fill();c.strokeStyle='#b0a58f';c.lineWidth=5;c.setLineDash([8,6]);c.stroke();c.fillStyle='#8a7f6a';c.font=`900 26px ${JP_FONT}`;c.textAlign='center';c.textBaseline='middle';c.fillText('掲載店',64,64);});
+    const m=new T3.Mesh(new T3.PlaneGeometry(.55,.55),vmat({map:t,transparent:true}));g.add(m);}
+  else if(spec.kind==='tablet'){const st=new T3.Mesh(box,M('#2b2b2b'));st.scale.set(.42,.3,.03);st.position.set(0,.2,0);st.rotation.x=-.35;g.add(st);
+    const t=vtex(128,96,(c)=>{c.fillStyle='#e9f4ff';c.fillRect(0,0,128,96);c.fillStyle='#e85d04';c.fillRect(0,0,128,18);c.fillStyle='#fff';c.font=`700 12px ${JP_FONT}`;c.fillText('予約一覧',6,13);c.fillStyle='#5a6577';for(let i=0;i<5;i++)c.fillRect(8,26+i*13,40+Math.random()*70,6);});
+    const sc2=new T3.Mesh(new T3.PlaneGeometry(.38,.26),new T3.MeshBasicMaterial({map:t}));ITEX.push(sc2.material);sc2.position.set(0,.2,.017);sc2.rotation.x=-.35;g.add(sc2);}
+  else if(spec.kind==='papers'){for(let i=0;i<9;i++){const p=new T3.Mesh(box,M(['#f6f6f2','#efe9da','#fff3b0','#e1ecf7'][i%4]));p.scale.set(.32,.014,.44);p.position.set(rnd(-.04,.04),.01+i*.016,rnd(-.04,.04));p.rotation.y=rnd(-.35,.35);g.add(p);}}
+  else if(spec.kind==='menu'){const items=MENU[s.genre]||['おすすめ 1,000'];const jp=/寿司|割烹|天ぷら|焼鳥|もつ|居酒屋|海鮮|定食|ラーメン|中華/.test(s.genre);
+    const t=vtex(512,240,(c,w,h)=>{c.fillStyle=jp?'#c9a46c':'#2b2b2b';c.fillRect(0,0,w,h);c.strokeStyle=jp?'#7a5a3a':'#6b4f3a';c.lineWidth=14;c.strokeRect(7,7,w-14,h-14);
+      c.fillStyle=jp?'#2b1d12':'#f2efe8';c.font=`900 34px ${JP_FONT}`;c.textAlign='center';c.fillText(jp?'お品書き':'MENU',w/2,52);
+      c.font=`700 30px ${JP_FONT}`;items.forEach((it,i)=>c.fillText(it,w/2,104+i*44));});
+    const m=new T3.Mesh(new T3.PlaneGeometry(2.4,1.12),vmat({map:t}));g.add(m);}
+  return g;
+}
+function seatPerson(p,x,z,ry,stool){V.sc.add(p);p.position.set(x,stool?.07:-.12,z);p.rotation.y=ry;const u=p.userData;u.legL.rotation.x=u.legR.rotation.x=-1.45;u.off=Math.random()*6;V.cust.push(p);}
+function buildInterior(s,st){
+  ITEX.length=0;
+  const sc=new T3.Scene();V.sc=sc;V.cust=[];V.walkers=[];V.hits=[];V.hots=[];
+  sc.background=new T3.Color('#1f1a17');
+  sc.add(new T3.HemisphereLight(0xfff1dc,0x4a3b2e,.8));
+  [[-1.9,2.75,-1.6],[1.6,2.75,-1.6],[-3.6,2.75,1.5]].forEach(([x,y,z])=>{const l=new T3.PointLight(0xffd59a,.7,10,1.5);l.position.set(x,y,z);sc.add(l);
+    const cord=new T3.Mesh(box,M('#222'));cord.scale.set(.02,.55,.02);cord.position.set(x,y+.4,z);sc.add(cord);
+    const shade=new T3.Mesh(new T3.ConeGeometry(.3,.26,14,1,true),M('#2b2b2b',{side:T3.DoubleSide}));shade.position.set(x,y+.1,z);sc.add(shade);
+    const bulb=new T3.Mesh(new T3.SphereGeometry(.09,8,6),new T3.MeshBasicMaterial({color:'#ffe3a8'}));ITEX.push(bulb.material);bulb.position.set(x,y-.02,z);sc.add(bulb);});
+  const jp=/寿司|割烹|天ぷら|焼鳥|もつ|居酒屋|海鮮|定食|ラーメン|中華/.test(s.genre),dark=/焼肉|韓国/.test(s.genre);
+  const wallC=dark?'#6a564b':jp?'#dccba6':new T3.Color(s.col).lerp(new T3.Color('#ffffff'),.35).getStyle();
+  const fl=new T3.Mesh(new T3.PlaneGeometry(10,9),new T3.MeshLambertMaterial({map:floorTex}));ITEX.push(fl.material);fl.rotation.x=-Math.PI/2;fl.position.z=.3;sc.add(fl);
+  const wm=M(wallC);
+  const wall=(w,x,z,ry)=>{const m=new T3.Mesh(new T3.PlaneGeometry(w,3.4),wm);m.position.set(x,1.7,z);m.rotation.y=ry;sc.add(m);};
+  wall(10,0,-4,0);wall(9,-5,.3,Math.PI/2);wall(9,5,.3,-Math.PI/2);
+  const ceil=new T3.Mesh(new T3.PlaneGeometry(10,9),M('#2e2621'));ceil.rotation.x=Math.PI/2;ceil.position.set(0,3.4,.3);sc.add(ceil);
+  const wain=M(jp?'#7a5a3a':dark?'#3b2f28':'#6b4f3a');
+  [[0,.45,-3.98,10,.9,.04],[-4.98,.45,.3,.04,.9,9],[4.98,.45,.3,.04,.9,9]].forEach(([x,y,z,a,b,c])=>{const m=new T3.Mesh(box,wain);m.scale.set(a,b,c);m.position.set(x,y,z);sc.add(m);});
+  // window to the street (time of day)
+  const skyC=scene.background.clone().lerp(new T3.Color('#ffffff'),.2);
+  const win=new T3.Mesh(new T3.PlaneGeometry(2.6,1.4),new T3.MeshBasicMaterial({color:skyC}));ITEX.push(win.material);win.rotation.y=-Math.PI/2;win.position.set(4.96,1.85,1.6);sc.add(win);
+  [[0,0,2.7,.08],[0,.7,2.7,.06],[0,-.7,2.7,.06],[0,0,.06,1.5]].forEach(([dy,dz2,a,b],i)=>{const m=new T3.Mesh(box,M('#3b2f28'));m.scale.set(.06,i<3?b:1.5,i<3?a:b);m.position.set(4.93,1.85+(i===1?.7:i===2?-.7:0),1.6+(i===3?0:0));sc.add(m);});
+  const wl=new T3.DirectionalLight(skyC.getHex(),.35);wl.position.set(8,3,1.6);sc.add(wl);
+  // counter & kitchen
+  const ctop=M(jp?'#c9a46c':'#8b5e3c'),cfront=M(jp?'#7a5a3a':'#4a3628');
+  const cb=new T3.Mesh(box,cfront);cb.scale.set(6.6,1,.7);cb.position.set(-.2,.5,-1.65);sc.add(cb);
+  const ct=new T3.Mesh(box,ctop);ct.scale.set(6.9,.08,.9);ct.position.set(-.2,1.04,-1.65);sc.add(ct);
+  const kb=new T3.Mesh(box,M('#b9bec4'));kb.scale.set(7,.95,.7);kb.position.set(-.2,.475,-3.55);sc.add(kb);
+  const hood=new T3.Mesh(box,M('#9aa1a9'));hood.scale.set(2.2,.5,.9);hood.position.set(-2.2,2.75,-3.5);sc.add(hood);
+  const shelf=new T3.Mesh(box,M('#6b4f3a'));shelf.scale.set(2.6,.06,.35);shelf.position.set(1.9,1.75,-3.8);sc.add(shelf);
+  for(let i=0;i<7;i++){const b=new T3.Mesh(new T3.CylinderGeometry(.06,.07,.32,8),M(pick(['#2f5d3a','#6b2a1f','#c9a46c','#3a4f7a','#e9e2cf'])));b.position.set(.8+i*.35,1.94,-3.8);sc.add(b);}
+  [[-2.6,-3.5],[-1.7,-3.5]].forEach(([x,z])=>{const p=new T3.Mesh(new T3.CylinderGeometry(.28,.25,.35,14),M('#b0b5bb'));p.position.set(x,1.12,z);sc.add(p);});
+  const kn=new T3.Mesh(new T3.PlaneGeometry(1,1.1),M(pick(['#22356b','#7a1f1f','#2f5d3a']),{side:T3.DoubleSide}));kn.position.set(-4.3,2.2,-3.96);sc.add(kn);
+  // stools & tables
+  const wood=M(jp?'#8a6a4a':'#5a4030');
+  [-2.6,-1.4,.9,2.1].forEach(x=>{const seat=new T3.Mesh(new T3.CylinderGeometry(.22,.22,.07,12),M('#7a1f1f'));seat.position.set(x,.72,-.85);sc.add(seat);const leg=new T3.Mesh(new T3.CylinderGeometry(.04,.06,.7,6),M('#3b3b3b'));leg.position.set(x,.35,-.85);sc.add(leg);});
+  const tables=[[-3.7,.6],[-3.7,2.7]];if(s.seats>=26)tables.push([3.5,3]);
+  tables.forEach(([x,z])=>{const t=new T3.Mesh(box,wood);t.scale.set(1.1,.06,1.1);t.position.set(x,.74,z);sc.add(t);const l=new T3.Mesh(box,M('#3b3b3b'));l.scale.set(.08,.72,.08);l.position.set(x,.36,z);sc.add(l);
+    [[0,-.8],[0,.8]].forEach(([dx,dz])=>{const ch=new T3.Mesh(box,wood);ch.scale.set(.5,.06,.5);ch.position.set(x+dx,.46,z+dz);sc.add(ch);const bk=new T3.Mesh(box,wood);bk.scale.set(.5,.6,.06);bk.position.set(x+dx,.78,z+dz+(dz>0?.24:-.24));sc.add(bk);});});
+  // menu board
+  const mb=mkHotObj(s,HOT_MENU);mb.position.set(-.4,2.5,-3.93);sc.add(mb);
+  // people
+  const owner=person(OUTFIT(s.genre));sc.add(owner);owner.position.set(-.3,0,-2.65);owner.rotation.y=0;V.owner=owner;owner.visible=!V.absent;
+  const me=person({shirt:'#26365e',pants:'#1c2540',arm:'#26365e',skin:'#f1c9a5',hair:'#1b1b1b',tie:'#f09000',bag:true});sc.add(me);me.position.set(2.15,0,1.05);me.rotation.y=Math.atan2(-2.45,-3.7);V.player=me;
+  if(V.absent){const sf=person({shirt:'#f2efe8',arm:'#f2efe8',apron:'#4c6a4f',hair:'#5a3825'});sc.add(sf);sf.position.set(.6,0,-2.5);V.helper=sf;}
+  if(s.boss&&V.bossHere&&!V.absent){const bs=person({shirt:'#3a3f48',arm:'#3a3f48',pants:'#2b2b2b',tie:'#7a1f1f',hair:'#8d8d8d'});sc.add(bs);bs.position.set(-1.8,0,-2.45);V.bossFig=bs;}
+  if(s.seats>=30&&!V.absent){const sf=person({shirt:'#f2efe8',arm:'#f2efe8',apron:'#3d405b'});sc.add(sf);sf.position.set(1.8,0,-3.0);V.staff=sf;}
+  const h=G.time/60;let nc=st.k==='idle'?ri(0,1):st.k==='prep'||st.k==='closed'?0:ri(2,4);
+  const seats=[[-2.6,-.85,Math.PI,true],[-1.4,-.85,Math.PI,true],[2.1,-.85,Math.PI,true],[-3.7,-.2,0,false],[-3.7,1.4,Math.PI,false],[-3.7,1.9,0,false]];
+  for(let i=0;i<nc&&i<seats.length;i++){const [x,z,ry,stool]=seats[i];seatPerson(person(),x,z,ry,stool);}
+  V.freeSeats=seats.slice(nc);
+  // emotion bubble
+  V.emo=makeSign(128,128);V.emo.scale.set(.62,.62,1);V.emo.visible=false;V.emo.userData.cur='';sc.add(V.emo);
+  // hotspots
+  const slots={wall:[{p:[-4.93,1.95,-1.4],r:Math.PI/2},{p:[-4.93,1.95,1.2],r:Math.PI/2},{p:[3.3,2.45,-3.93],r:0}],counter:[{p:[-2.2,1.08,-1.6],r:0},{p:[2.2,1.08,-1.6],r:0}],floor:[{p:[4.2,0,-2.6],r:-.3}],window:[{p:[4.93,1.85,.2],r:-Math.PI/2}]};
+  const kindSlot={poster:'wall',scarf:'wall',crate:'floor',phone:'counter',bills:'counter',tablet:'counter',papers:'counter',sticker:'window'};
+  ['topic','need','obj'].forEach(id=>{
+    const spec=hotSpec(s,id),obj=mkHotObj(s,spec),sl=(slots[kindSlot[spec.kind]]||[]).shift()||slots.wall.shift()||slots.counter.shift();
+    if(!sl)return;obj.position.set(...sl.p);obj.rotation.y=sl.r;sc.add(obj);addHot(id,spec,obj,sl);
+    if(spec.kind==='phone')V.phone=obj;
+  });
+  addHot('menu',HOT_MENU,mb,{p:[-.4,2.5,-3.93],r:0});
+  // camera
+  V.cam=new T3.PerspectiveCamera(50,1,.1,60);fitInteriorCam();
+}
+function addHot(id,spec,obj,sl){
+  const done=V.s.obs.has(id);
+  const mk=makeSign(128,128);mk.scale.set(.5,.5,1);
+  {const x=mk.userData.c.getContext('2d');x.beginPath();x.arc(64,64,56,0,7);x.fillStyle='#ffffff';x.fill();x.lineWidth=8;x.strokeStyle='#f09000';x.stroke();x.font=`62px ${EMOJI_FONT}`;x.textAlign='center';x.textBaseline='middle';x.fillText('🔍',64,68);mk.userData.t.needsUpdate=true;}
+  const wp=new T3.Vector3(...sl.p);const n=new T3.Vector3(Math.sin(sl.r),0,Math.cos(sl.r));
+  mk.position.copy(wp).add(n.multiplyScalar(.25)).add(new T3.Vector3(0,obj.position.y<.5?1.2:.62,0));
+  mk.visible=!done;V.sc.add(mk);
+  const hot={id,spec,obj,marker:mk,done};V.hots.push(hot);
+  obj.traverse(m=>{if(m.isMesh){m.userData.hot=hot;V.hits.push(m);}});mk.userData.hot=hot;V.hits.push(mk);
+}
+function fitInteriorCam(){
+  if(!V||!V.cam)return;const r=view.getBoundingClientRect(),asp=r.width/Math.max(1,r.height);V.cam.aspect=asp;
+  if(asp<1){V.cam.fov=60;V.camBase=new T3.Vector3(1.7,2.5,6.2);V.look=new T3.Vector3(-.45,.35,-2.4);}
+  else{V.cam.fov=50;V.camBase=new T3.Vector3(2.7,2.45,5.1);V.look=new T3.Vector3(-.7,.95,-2.4);}
+  V.cam.position.copy(V.camBase);V.cam.lookAt(V.look);V.cam.updateProjectionMatrix();
+}
+function disposeInterior(){ITEX.forEach(t=>t.dispose&&t.dispose());ITEX.length=0;}
+function setEmo(e){
+  if(!V||!V.emo)return;const sp=V.emo;if(sp.userData.cur===e)return;sp.userData.cur=e;
+  const {c,t}=sp.userData,x=c.getContext('2d');x.clearRect(0,0,128,128);
+  if(e){x.beginPath();x.arc(64,58,52,0,7);x.fillStyle='#ffffff';x.fill();x.lineWidth=5;x.strokeStyle='#1d2a4a';x.stroke();
+    x.beginPath();x.moveTo(52,104);x.lineTo(64,124);x.lineTo(76,104);x.fill();x.font=`60px ${EMOJI_FONT}`;x.textAlign='center';x.textBaseline='middle';x.fillText(e,64,62);}
+  t.needsUpdate=true;sp.visible=!!e;
+}
+function react(name,emo,dur=1.8){if(!V)return;V.react=name;V.reactT=dur;if(emo!==undefined)setEmo(emo);}
+function say(sp,line){V.speaker=sp;V.line=line;V.typed=0;}
+function animOwner(dt,o,talking){
+  const u=o.userData;u.phase+=dt;const t=u.phase;
+  const toP=Math.atan2(V.player.position.x-o.position.x,V.player.position.z-o.position.z);
+  turnTo(o,talking?toP:0,dt,4);
+  let aL={x:0,y:0,z:0},aR={x:0,y:0,z:0},hx=0,hy=0,lean=0;
+  const r=V.reactT>0&&o===V.owner?V.react:null;
+  if(!talking){
+    if(V.act==='chop'){aR.x=-1.0-Math.abs(Math.sin(t*9))*.5;aL.x=-.9;aL.z=.2;hx=.5;}
+    else if(V.act==='read'){aL={x:-1.25,y:0,z:.35};aR={x:-1.25,y:0,z:-.35};hx=.55;}
+    else if(V.act==='wipe'){aR.x=-.95;aR.z=Math.sin(t*4)*.4;hx=.4;}
+  } else {
+    if(o===V.owner&&(V.interest<25&&!V.over)){aL={x:-1.3,y:0,z:.8};aR={x:-1.3,y:0,z:-.8};}
+    else aR.x=-Math.max(0,Math.sin(t*1.9))*.45;
+    if(o===V.owner&&V.interest>60)lean=.1;
+    hx=.06+Math.sin(t*1.2)*.03;
+  }
+  if(r==='nod')hx=.18+Math.sin(t*13)*.22;
+  if(r==='shake')hy=Math.sin(t*15)*.45;
+  if(r==='laugh'){hx=-.18;}
+  if(r==='lean'){lean=.2;hx=.12;}
+  if(r==='look')hy=-.85;
+  if(r==='watch'){aL={x:-1.45,y:0,z:.55};hx=.5;}
+  if(r==='sad')hx=.45;
+  if(r==='cross'){aL={x:-1.3,y:0,z:.8};aR={x:-1.3,y:0,z:-.8};}
+  if(r==='cheer'){aL={x:-2.9,y:0,z:-.25};aR={x:-2.9,y:0,z:.25};hx=-.2;}
+  const k=Math.min(1,dt*9);
+  ['x','y','z'].forEach(a=>{u.armL.rotation[a]=lerp(u.armL.rotation[a],aL[a],k);u.armR.rotation[a]=lerp(u.armR.rotation[a],aR[a],k);});
+  u.head.rotation.x=lerp(u.head.rotation.x,hx,k);u.head.rotation.y=lerp(u.head.rotation.y,hy,k);
+  u.body.position.z=lerp(u.body.position.z,lean,k);u.head.position.z=lerp(u.head.position.z,lean*1.5,k);
+  u.body.position.y=r==='laugh'?1.04+Math.abs(Math.sin(t*14))*.06:lerp(u.body.position.y,1.04,k);
+}
+let lastLine='';
+function updateInterior(dt,now){
+  if(!V||!V.sc)return;
+  if(V.reactT>0)V.reactT-=dt;
+  if(V.owner.visible)animOwner(dt,V.owner,V.talking);
+  if(V.helper)animOwner(dt,V.helper,true);
+  if(V.bossFig)animOwner(dt,V.bossFig,V.talking);
+  animIdle(V.player,dt,false);
+  V.cust.forEach(c=>{const u=c.userData;u.phase+=dt;u.armR.rotation.x=-1.0-Math.max(0,Math.sin(u.phase*2+u.off))*.6;u.armL.rotation.x=-.9;u.head.rotation.x=.18+Math.sin(u.phase*2+u.off)*.06;});
+  if(V.staff){const sf=V.staff,u=sf.userData;u.tx=u.tx??1.8;if(Math.abs(sf.position.x-u.tx)<.05){u.wait=(u.wait||0)+dt;animIdle(sf,dt,false);if(u.wait>2){u.wait=0;u.tx=u.tx>0?-3:2.6;}}
+    else{const d=Math.sign(u.tx-sf.position.x);sf.position.x+=d*1.2*dt;turnTo(sf,d>0?Math.PI/2:-Math.PI/2,dt);animWalk(sf,dt,1.2);}}
+  for(let i=V.walkers.length-1;i>=0;i--){const w=V.walkers[i],g=w.g,tg=w.path[w.i];
+    const dx=tg[0]-g.position.x,dz=tg[1]-g.position.z,d=Math.hypot(dx,dz);
+    if(d<.06){w.i++;if(w.i>=w.path.length){V.walkers.splice(i,1);w.done&&w.done(g);}continue;}
+    g.position.x+=dx/d*1.6*dt;g.position.z+=dz/d*1.6*dt;turnTo(g,Math.atan2(dx,dz),dt);animWalk(g,dt,1.6);}
+  V.hots.forEach(h=>{if(h.marker.visible){const s=.5+Math.sin(now/260+h.id.length)*.05;h.marker.scale.set(s,s,1);}});
+  if(V.phone&&V.phoneRing>0){V.phoneRing-=dt;V.phone.userData.ring.rotation.z=Math.sin(now/28)*.18;V.phone.userData.ring.position.y=.13+Math.abs(Math.sin(now/40))*.03;}
+  else if(V.phone){V.phone.userData.ring.rotation.z=0;V.phone.userData.ring.position.y=.13;}
+  const o=V.helper||V.owner;V.emo.position.set(o.position.x+.35,o.position.y+2.35,o.position.z+.1);
+  V.cam.position.x=V.camBase.x+Math.sin(now/2600)*.06;V.cam.position.y=V.camBase.y+Math.sin(now/3100)*.03;V.cam.lookAt(V.look);
+  if(V.typed<V.line.length){V.typed=Math.min(V.line.length,V.typed+dt*90);}
+  const shown=V.line.slice(0,Math.floor(V.typed));if(shown!==lastLine){lastLine=shown;const el=$('#vline');if(el)el.textContent=shown;}
+}
+
+// ---- flow ----
+function enterShop(s){
+  const st=status(s,G.time),fn=fnm(s),si=SHOPS.indexOf(s);
+  if(s.won){pass(3);toast(`${fn}さん「いつもありがとね!」(受注済)`);return;}
+  if(s.lost){pass(3);toast(`${fn}さん「ごめんね、他の媒体さんで決めちゃったんだ」`);return;}
+  if(st.k==='holiday'){pass(2);toast(`${s.name}はシャッターが下りている。今日は定休日(${WD[s.closed]}曜休み)`);return;}
+  if(s.refused){pass(3);toast('今日はもう相手にしてもらえない。日を改めよう');return;}
+  let apo=null;const ai=G.apos.findIndex(a=>a.si===si&&a.day===G.day);
+  if(ai>=0){const a=G.apos[ai],diff=G.time-a.time;
+    if(diff<-20){toast(`${fn}さんとの約束は${fmtT(a.time)}。少し早い`);return;}
+    apo={a,late:diff>20};G.apos.splice(ai,1);}
+  if(st.k==='peak'&&!apo){
+    const lunch=G.time<14*60&&s.type!=='dinner';
+    G.mode='msg';
+    card(`<h3>${s.icon} ${s.name}</h3><p>店内は満席で、入口に行列ができている。${fn}さんは厨房で手が離せないようだ。</p>
+      ${lunch&&!G.ate?'<p class="note">客としてランチを食べれば、店の様子がわかって店主の印象も良くなる。</p>':''}
+      <div class="row">${lunch&&!G.ate?'<button class="btn pri" id="eat">客として食べる<small>30分・体力+30・信頼+1</small></button>':''}<button class="btn" id="card1">名刺だけ渡していく<small>1分・折り返し期待度 ${callStars(callChance(s,false,true))}</small></button><button class="btn" id="ok">出直す</button></div>`);
+    $('#card1').onclick=()=>{pass(1);leaveCard(s,false,true);G.mode='play';closeCard();renderAll();checkEnd();};
+    $('#ok').onclick=()=>{pass(3);addLog(`${s.name}:ピーク帯のため出直し`);G.mode='play';closeCard();renderAll();checkEnd();};
+    const eat=$('#eat');if(eat)eat.onclick=()=>{G.ate=true;s.ate=true;s.trust=Math.min(3,s.trust+1);s.carry+=5;pass(30);G.stamina=clamp(G.stamina+30,0,100);
+      const ht=HOT_TOPIC[s.topic];s.topicKnown=true;s.obs.add('topic');s.obs.add('menu');
+      addLog(`${s.name}でランチ`);msgCard('ランチ',`<p>${s.genre}をいただいた。食べながら店内を観察すると…<b>${ht.text}</b></p><p class="note">会計のとき${fn}さんと目が合った。次に来たとき覚えていてくれそうだ。</p>`);};
+    $('#ok').focus();return;
+  }
+  G.today.visit++;
+  startVisit(s,st,apo,!apo&&Math.random()<st.absent);
+}
+function startVisit(s,st,apo,absent){
+  const fn=fnm(s);
+  let start=Math.max(s.mood+st.mod+s.trust*4-8,s.carry)+ri(-4,4);
+  if(s.rivalToday)start-=5;if(G.stamina<=0)start-=10;
+  let pat=st.k==='idle'?100:st.k==='prep'?60:70;if(s.pers==='職人気質')pat-=15;if(s.pers==='人情派')pat+=10;
+  const bossHere=!s.boss||s.boss.days.includes(G.day-1)||!!(apo&&apo.a.boss);
+  V={s,st,interest:clamp(start,0,90),patience:pat,maxPat:pat,proposed:null,matched:false,meet:false,over:false,objection:null,dataShown:false,chats:0,bossHere,absent,apo,
+     phase:absent?'absent':'arrive',stage:0,asked:{},you:'',menu:null,acts:0,eventDone:false,next:null,line:'',speaker:'',typed:0,act:st.k==='idle'?'read':st.k==='prep'||st.k==='closed'?'chop':'wipe',react:null,reactT:0,talking:false,waited:false,phoneRing:0};
+  if(!absent){const si=SHOPS.indexOf(s);G.calls=G.calls.filter(c=>c.si!==si);G.missedCalls=G.missedCalls.filter(c=>c.si!==si);}
+  buildInterior(s,st);
+  if(absent){
+    const hints=[{t:`店長…あ、${fn}は今いないんです。だいたい${bestTime(s)}なら店にいますよ`,f:()=>{}}];
+    if(!s.topicKnown)hints.push({t:`${fn}さん、${TOPICS[s.topic]}の話になると止まらないんですよ(笑)`,f:()=>{s.topicKnown=true;}});
+    if(s.boss&&!s.bossKnown)hints.push({t:`お金のことを決めるのは${s.boss.who}で、${s.boss.days.map(d=>WD[d]).join('・')}曜に来ます`,f:()=>{s.bossKnown=true;}});
+    if(!s.needKnown&&Math.random()<.5)hints.push({t:`最近${fn}さん、「${PRODUCTS[s.need].issue}」ってよくぼやいてます`,f:()=>{s.needHint=true;}});
+    const h=pick(hints);h.f();s.carry+=2;V.talking=true;h.t+=' 名刺、お預かりしましょうか?';
+    say('アルバイト',h.t);addLog(`${s.name}:店主不在。スタッフから情報`);
+  } else if(apo){
+    s.met=true;V.phase='talk';V.stage=1;V.talking=true;V.act='talk';
+    if(apo.late){s.trust=Math.max(0,s.trust-1);V.interest=clamp(V.interest-10,0,100);V.patience-=15;say(`${fn}さん`,`約束、${fmtT(apo.a.time)}だったよね…?まあ、入って`);setEmo('😒');addLog(`${s.name}:アポに遅刻`);}
+    else{V.patience=V.maxPat=pat+30;V.interest=clamp(V.interest+5,0,100);say(`${fn}さん`,`お、時間どおりだね。待ってたよ。${apo.a.boss?`今日は${s.boss.who.replace(/\(.+\)/,'')}もいるから、一緒に聞くよ`:'座って座って'}`);setEmo('😊');addLog(`${s.name}:アポどおりに訪問`);}
+  } else {
+    const doing={chop:'カウンターの奥で仕込みをしている',read:'カウンターで新聞を広げている',wipe:'片付けの最中だ'}[V.act];
+    say('',`${fn}さんは${doing}。まだこちらに気づいていない。${s.met?'':'(🔍 をタップすると店内を観察できる)'}`);
+  }
+  pass(1);G.mode='visit';
+  fadeTo(()=>{view.classList.add('inVisit');$('#vui').hidden=false;lastLine='';renderVisit();resize();if(matchMedia('(max-width:600px)').matches)view.scrollIntoView({block:'start',behavior:reduceMotion?'auto':'smooth'});});
+}
+function fadeTo(fn){const f=$('#fade');f.classList.add('on');setTimeout(()=>{fn();setTimeout(()=>f.classList.remove('on'),40);},reduceMotion?0:260);}
+const reduceMotion=matchMedia('(prefers-reduced-motion: reduce)').matches;
+function vGreet(k){
+  const s=V.s,fn=fnm(s);pass(2);
+  const first=!s.met;s.met=true;
+  if(first&&k){
+    const like=GREET_LIKE[s.pers];
+    V.you=GREET[k].line;say('','(声をかけた)');
+    V.next=()=>{V.phase='talk';V.stage=1;V.talking=true;V.act='talk';V.you='';
+      if(k===like){s.trust=Math.min(3,s.trust+1);V.interest+=5;V.patience=Math.min(V.maxPat,V.patience+10);react('nod','🙂');}
+      else if(k==='polite')react('nod','😐');
+      else{V.patience-=10;react('look','😐');}
+      say(`${fn}さん`,greet(s,V.st)+'(名刺を交換した)');renderVisit();};
+  } else {
+    V.you='こんにちは、食べログです!';say('','(声をかけた)');
+    V.next=()=>{V.phase='talk';V.stage=1;V.you='';V.talking=true;V.act='talk';react('nod','🙂');say(`${fn}さん`,greet(s,V.st));renderVisit();};
+  }
+  renderVisit();
+}
+function vWait(){
+  pass(5);V.waited=true;V.patience+=20;V.maxPat+=20;V.interest+=3;V.act='free';
+  V.you='';say('',`5分ほど待つと、${fnm(V.s)}さんの手が止まった。今なら話しかけやすそうだ。`);renderHUD();renderVisit();
+}
+function observe(h){
+  if(!V||h.done)return;h.done=true;h.marker.visible=false;const s=V.s;s.obs.add(h.id);pass(1);
+  if(V.phase==='talk'&&!V.over&&V.patience>0)V.patience-=3;
+  if(h.id==='topic')s.topicKnown=true;if(h.id==='need')s.needHint=true;if(h.id==='obj')s.objKnown=true;
+  const txt=h.id==='menu'?`お品書きを見た。看板は「${(MENU[s.genre]||['おすすめ'])[0].split(' ')[0]}」。客単価はだいたい${yen(UNIT[s.genre]||2000)}くらいだろう`:h.spec.text;
+  V.menu=null;V.you='';say('観察',txt);renderHUD();renderVisit();
+}
+// ---- 商談フロー:つかみ → 不満を聞く(3視点) → 提案 → クロージング ----
+const STAGES=['つかみ','不満を聞く','提案','クロージング'];
+const VIEW={staff:{label:'スタッフ・運営',icon:'👥',q:'ピークの時間帯って、何人で回してるんですか?'},sales:{label:'販促・売上',icon:'💴',q:'集客や販促には、今どのくらいかけてます?'},guest:{label:'お客さん',icon:'🧑‍🤝‍🧑',q:'最近のお客さんって、どんな方が多いですか?'}};
+const VIEW_MORE={staff:'人のことで、ほかに困ってることってあります?',sales:'お金や売上の面で、ほかに気になってることは?',guest:'お客さんの面で、ほかに何か変わったことは?'};
+const VIEW_NONE={staff:'うちは今のところ、なんとか回ってるよ',sales:'販促は特に何もしてないね。別に困ってもないかな',guest:'まあ、いつもの常連さんが中心かな'};
+const NEED_C={
+  予約:{view:'staff',short:'ピーク中の電話に出られない',line:'ピークは2人で回してるから、電話が鳴っても出られないんだよ。折り返すと、もう他の店に決まってたりしてね'},
+  集客:{view:'sales',short:'平日夜の客入りが弱い',line:'平日の夜がとにかく弱くてね。チラシも配ったけど、ほとんど反応なかったよ'},
+  求人:{view:'staff',short:'人が足りない',line:'とにかく人が足りない。募集しても来ないし、来てもすぐ辞めちゃうんだ'}};
+const OBJ_C={
+  他媒体:{view:'sales',short:'他サイトのクリック課金が読めない',line:'別のサイトに載せてるけど、クリック課金でさ。月によって請求が全然違って、何にいくら払ってるのかよくわからないんだよ',comp:true},
+  価格:{view:'sales',short:'原価高騰で販促費がない',line:'仕入れがどんどん上がってね。正直、販促にお金を回す余裕がないんだよ'},
+  効果:{view:'sales',short:'前の媒体で効果が出なかった',line:'前にある媒体に載せたけど、全然効果なくてやめたんだ。あれは失敗だったな'},
+  手間:{view:'staff',short:'事務まで手が回らない',line:'ひとりで回してるから、事務仕事が全然追いつかない。夜中にやってるよ'}};
+const GUEST_C=[{short:'常連の高齢化',line:'常連さんがみんな年を取ってきてね。若い人は前ほど来ないかな'},{short:'新規客の来店経路がわからない',line:'新しいお客さんがどこで店を知ったのか、正直よくわからないんだよ'},{short:'満席で帰る飛び込み客',line:'週末は予約なしで来て、満席で帰っちゃうお客さんが結構いるんだよね'}];
+const SOLVE={予約:'営業中でも24時間ネットで予約を受けられるので、電話に出られなくても取りこぼしません',集客:'平日夜向けのコースやクーポンを打ち出して、探している人に見つけてもらえるようにできます',求人:'お店のページを見ているお客さんにも求人が届くので、お店のファンから応募が来やすいです'};
+function initComps(s){const g=pick(GUEST_C);s.comps=[{key:'need',...NEED_C[s.need]},{key:'obj',...OBJ_C[s.obj]},{key:'guest',view:'guest',...g}].map(c=>({...c,out:false}));}
+const allOut=s=>s.comps.every(c=>c.out);
+function pageData(s){
+  if(s.page)return s.page;const yrs=s.need==='集客'?3:1;
+  return s.page={reviews:Math.round(s.seats*rnd(1.5,3.2)),rating:(3.02+rnd(0,.55)).toFixed(2),photo:yrs,rsv:s.need==='予約'?'電話のみ':'ネット予約あり',job:s.need==='求人'?'求人情報なし':'掲載なし(募集していない)',other:s.obj==='他媒体'?'他サイトの予約ボタンあり':'なし',news:s.obj==='手間'?'最終更新 2年前':'最近更新あり',
+    hook:s.need==='予約'?'予約が電話だけ':s.need==='集客'?`写真が${yrs}年前のまま`:'求人情報が出ていない'};
+}
+function checkPage(s,after){
+  pass(3);const pg=pageData(s);s.pageChecked=true;s.needHint=true;const w=c=>c?' <b style="color:var(--red)">⚠</b>':'';
+  G.mode='msg';
+  card(`<h3>📱 食べログ 店舗ページ</h3><p><b>${s.icon} ${s.name}</b>(${s.genre}/${s.seats}席)・無料掲載</p>
+    <table class="list"><tr><td>評価</td><td>★${pg.rating}(口コミ${pg.reviews}件)</td></tr>
+    <tr><td>写真</td><td>最終更新 ${pg.photo}年前${w(pg.photo>=3)}</td></tr>
+    <tr><td>予約</td><td>${pg.rsv}${w(s.need==='予約')}</td></tr>
+    <tr><td>求人</td><td>${pg.job}${w(s.need==='求人')}</td></tr>
+    <tr><td>他サイト</td><td>${pg.other}${w(s.obj==='他媒体')}</td></tr>
+    <tr><td>お知らせ</td><td>${pg.news}${w(s.obj==='手間')}</td></tr></table>
+    <p class="note">⚠の項目が話の入口になる。訪問したら「店舗ページの話から入る」が使える。(3分)</p>
+    <div class="row"><button class="btn pri full" id="ok">閉じる</button></div>`);
+  addLog(`📱 ${s.name}の店舗ページを確認`);
+  $('#ok').onclick=()=>{if(after)after();else{G.mode='play';closeCard();}renderAll();checkEnd();};$('#ok').focus();
+}
+function dataLine2(s){
+  const u=UNIT[s.genre]||3000;
+  if(s.depth>=2&&s.num){
+    if(s.need==='予約')return `さっきの「週末に${s.num}本」で計算すると、月に${s.num*8}組、売上でおよそ${yen(s.num*8*2.5*u)}の予約を逃しています`;
+    if(s.need==='集客')return `空いている${s.num}席が平日20日で月${s.num*20}席。その3割が埋まるだけで、月${yen(s.num*20*.3*u)}の上積みになります`;
+    return `${s.num}人採用できれば、${fnm(s)}さんが週1日休めるシフトが組めます。このエリアの同条件の求人は、月4〜6件ほど応募が来ています`;
+  }
+  const n={予約:Math.round(s.seats*.6),集客:Math.round(s.seats*3.5),求人:ri(3,6)}[s.need];
+  return {予約:`電話に出られないピーク中の予約、一般的な試算だと月${n}件ほど取りこぼしがあります`,集客:`この立地と席数だと、平日夜に月${n}席分の空席が出ている計算です`,求人:`この周辺の飲食求人は、条件を合わせれば月${n}件ほど応募が見込めます`}[s.need];
+}
+const COST2={page:8,chat:15,praise:10,cont:6,main:0,ask:12,more:12,toProp:0,prop:15,data:10,resp:10,toClose:0,test:8,close:8,back:5};
+function vAct(kind,arg){
+  const s=V.s,P=PERS[s.pers],fn=fnm(s),who=`${fn}さん`;
+  if(V.over||V.patience<=0)return;
+  V.menu=null;V.acts++;
+  const mins={main:2,toProp:1,toClose:1,back:2,cont:3}[kind]??8;pass(mins);if(mins>=8)G.stamina=clamp(G.stamina-2,0,100);
+  let cost=COST2[kind]??10;
+  if(kind==='chat'){if(s.pers==='人情派')cost=10;if(s.pers==='数字派'||s.pers==='職人気質')cost=22;}
+  if(kind==='data'&&s.pers==='数字派')cost=6;
+  if(kind==='ask'&&!s.comps.some(c=>c.view===arg&&!c.out))cost=8;
+  V.patience-=cost;V.you='';
+  switch(kind){
+  case 'page':{const pg=pageData(s);V.usedPage=true;s.needHint=true;s.trust=Math.min(3,s.trust+1);
+    V.you=`お店のページ、拝見してきました。口コミが${pg.reviews}件もあるのに、${pg.hook}なのがもったいないなと思って`;
+    const r={人情派:[9,'え、見てくれたの?…確かに、ページなんてずっと触ってないな','😊'],新しもの好き:[10,'え、ちゃんと見てくれてるんだ!そうなの、気になってたんだよね','😮'],職人気質:[8,'…ふん。ちゃんと調べてきたんだな','🙂'],数字派:[6,'で、そのページを直すと何が変わるの?','🤔'],慎重派:[9,'よく見てるね。…まあ、話くらいは聞こうか','🙂']}[s.pers];
+    V.interest+=r[0];say(who,r[1]);react('lean',r[2]);break;}
+  case 'chat':
+    V.chats++;V.you=`そういえば、${TOPICS[arg]}って…`;
+    if(V.chats>=2&&(s.pers==='数字派'||s.pers==='職人気質')){V.interest-=5;say(who,'…で、今日は何の用?');react('watch','⌛');}
+    else if(arg===s.topic){V.interest+=Math.round(14*P.chat);s.trust=Math.min(3,s.trust+2);s.topicKnown=true;V.patience+=8;say(who,TOPIC_LINE[arg]);react('laugh','😄');}
+    else{V.interest+=Math.round(4*P.chat);s.trust=Math.min(3,s.trust+1);say(who,`へえ、${TOPICS[arg]}ねえ。(あまり興味はなさそうだ)`);react('look','😐');}
+    break;
+  case 'praise':{const top=(MENU[s.genre]||['おすすめ'])[0].split(' ')[0];V.you=`${top}、看板なんですね。おいしそうです`;
+    V.interest+=s.pers==='職人気質'?12:6;s.trust=Math.min(3,s.trust+1);
+    say(who,s.pers==='職人気質'?`…${top}か。あれは3年かけて今の形にしたんだ`:`ありがとう!${top}はうちの自慢なんだよ`);react('nod','😊');break;}
+  case 'cont':{const out=s.comps.filter(c=>c.out);V.usedCont=true;V.you=`前回伺った「${out[0].short}」の件、あれから考えてきました`;V.interest+=10;
+    V.stage=out.some(c=>c.key==='need')?3:2;say(who,'お、覚えててくれたんだ。で、どうなの?');react('nod','🙂');break;}
+  case 'main':V.stage=2;V.you='今日は、お店の最近の様子を伺えればと思って';
+    if(V.chats===0&&!V.usedPage&&(s.pers==='数字派'||s.pers==='職人気質')){V.patience+=10;say(who,'話が早くて助かるよ。で、何が聞きたいの?');react('nod','🙂');}
+    else if(V.chats===0&&!V.usedPage&&s.pers==='人情派'){V.interest-=3;say(who,'…ずいぶん急だね。まあいいけど');react('look','😐');}
+    else{say(who,'いいよ、何でも聞いて');react('nod','🙂');}
+    break;
+  case 'ask':{V.asked[arg]=(V.asked[arg]||0)+1;V.you=V.asked[arg]>1?VIEW_MORE[arg]:VIEW[arg].q;
+    const c=s.comps.find(c=>c.view===arg&&!c.out);
+    if(!c){V.interest+=1;say(who,VIEW_NONE[arg]);react('look','😐');break;}
+    if(c.key==='need'&&!(s.needHint||s.trust>=(s.pers==='職人気質'?2:1)||Math.random()<.25)){s.trust=Math.min(3,s.trust+1);V.interest+=2;say(who,'うーん…まあ、ぼちぼちかな。(まだ本音は話してくれない)');react('cross','😐');break;}
+    c.out=true;V.interest+=c.key==='need'?7:4;
+    if(c.key==='need'){s.needKnown=true;s.depth=Math.max(s.depth,1);}
+    if(c.comp)s.compDis=true;if(c.key==='obj')s.objKnown=true;
+    let l=c.line;if(allOut(s))l+=' …まあ、困ってるのはそんなとこかな';
+    say(who,l);react(c.key==='need'?'sad':'lean',c.key==='need'?'😔':c.comp?'😤':'🤔',2.2);break;}
+  case 'more':
+    if(s.depth===1){V.you='それって、具体的にはどのくらいですか?';s.num=s.num||{予約:ri(3,6),集客:Math.round(s.seats*.45),求人:ri(2,3)}[s.need];s.depth=2;V.interest+=5;say(who,NEED_DETAIL[s.need](s.num,s));react('look','🤔');}
+    else{V.you='それで、一番困っていることって何ですか?';
+      if(s.trust>=2||Math.random()<.5){s.depth=3;V.interest+=6;s.trust=Math.min(3,s.trust+1);say(who,NEED_DEEP[s.need]);react('sad','😔',2.4);}
+      else{V.interest+=1;say(who,'…まあ、それはいいじゃない。(まだそこまでは話してくれない)');react('cross','😐');}}
+    break;
+  case 'toProp':{V.you='お話を伺って、ご提案したいことがあるんですが';const n=s.comps.filter(c=>c.out).length;
+    if(!n){V.interest-=12;say(who,'いきなり売り込み?まだ何も話してないけど');react('cross','😒');}
+    else{V.stage=3;if(!allOut(s)){V.early=true;say(who,'うん、聞くだけ聞くよ');react('nod','🙂');}else{say(who,'お、聞かせてよ');react('lean','🙂');}}
+    break;}
+  case 'prop':{
+    if(s.pers==='職人気質'&&s.trust<2){V.you=`${PRODUCTS[arg].name}のご提案なんですが…`;V.interest-=5;say(who,'まだあんたに店のことを任せる気にはならないな');react('cross','😒');break;}
+    if(!V.meet){V.meet=true;G.today.meet++;}V.proposed=arg;const needOut=s.comps.find(c=>c.key==='need').out;
+    if(arg!==s.need){V.matched=false;s.wrongProp=arg;V.you=`${PRODUCTS[arg].name}というサービスがありまして…`;V.interest-=12;say(who,'うちに必要なのは、それじゃないんだよな');react('shake','🙅');break;}
+    V.matched=true;s.wrongProp=null;
+    if(needOut){V.you=`さっき伺った「${NEED_C[s.need].short}」の件、${PRODUCTS[arg].name}なら${SOLVE[arg]}`;V.interest+=14+s.trust*4+(allOut(s)?8:0)+(s.depth>=2?4:0);say(who,'…それ、まさに困ってたところだよ');react('lean','😮');}
+    else{V.you=`${PRODUCTS[arg].name}というサービスがありまして、${SOLVE[arg]}`;V.interest+=10;say(who,'へえ。まあ、悪くはなさそうだね');react('nod','🙂');}
+    if(!s.objCleared){const oc=s.comps.find(c=>c.key==='obj');V.objection=s.obj;
+      V.next=()=>{V.you='';if(oc.out){say(who,`ただ、さっきも言ったけど「${oc.short}」ってのがあるからさ…`);react('look','🤔');}
+        else{V.interest=clamp(V.interest-8,0,100);say(who,'…でもさ。'+OBJ[s.obj].line(yen(amount(V.proposed,s))));react('cross','😒');}renderVisit();};}
+    break;}
+  case 'data':
+    V.dataShown=true;V.interest+=Math.round((12+s.depth*5)*P.data);V.you=dataLine2(s);
+    say(who,s.pers==='数字派'?(s.depth>=2?'…うちの数字で出されると弱いな。その計算、あとで資料でちょうだい':'…その数字、根拠は?…まあ、なるほどね'):'へえ、そんなに?考えたこともなかったよ');react('lean',s.pers==='数字派'?'😮':'🤔',2.4);
+    break;
+  case 'resp':{const ok=OBJ[s.obj].ok===arg||(arg==='fixed'&&s.obj==='他媒体');V.you=RESP[arg].say;
+    if(ok){V.interest+=arg==='fixed'?25:15;s.objCleared=true;V.objection=null;say(who,RESP[arg].ok);react('nod',arg==='fixed'?'😮':'🙂');}
+    else{V.interest-=10;say(who,'いや、そういう話じゃなくてさ…');react('shake','😒');}
+    break;}
+  case 'toClose':V.stage=4;V.you='ここまでで、気になる点はありますか?';
+    if(V.interest>=60){say(who,'いや、だいたいわかったよ');react('nod','🙂');}else{say(who,'うーん、まだちょっとね…');react('look','🤔');}
+    break;
+  case 'test':V.tested=true;V.you='もし始めるとしたら、いつ頃からがいいですか?';
+    if(V.interest>=55){V.testOK=true;V.interest+=6;if(s.boss)s.bossKnown=true;say(who,'やるなら来月頭からかな。'+(!V.bossHere?`ただ、決めるのは${s.boss.who}なんだよね`:''));react('lean','🤔');}
+    else{V.interest-=3;say(who,'まだそこまでは考えてないよ');react('cross','😐');}
+    break;
+  case 'back':V.stage=2;V.you='すみません、もう少しお話を聞かせてください';say(who,'いいけど…');react('look','😐');break;
+  case 'close':V.you='ぜひ一緒にやらせてください。お申し込みをお願いできますか?';
+    if(!V.bossHere){s.bossKnown=true;say(who,`俺だけじゃ決められないんだよ。${s.boss.who}がいる${s.boss.days.map(d=>WD[d]).join('・')}曜に、もう一回来てよ`);react('look','🤔');break;}
+    {const p=clamp(V.interest/100*(V.matched?1:.3)*P.close+(allOut(s)?.08:0)+(V.testOK?.08:0)+(s.compDis?.08:0)+(s.depth>=3?.1:0)+(G.pray?.05:0)-(V.early?.08:0),0,.95);
+     if(Math.random()<p){
+       const a=amount(V.proposed,s);s.won=true;s.carry=0;G.today.win++;G.today.sales+=a;V.over=true;
+       say(who,'わかった、やってみよう!申込書ちょうだい。');react('cheer','🤝',3);
+       addLog(`🎉 ${s.name}:${PRODUCTS[V.proposed].name}で受注 ${yen(a)}`);buzz([60,40,120]);
+       V.next=()=>{V.you='';say('',`🎉 ${PRODUCTS[V.proposed].name} ${yen(a)}/月で受注!${fn}さんが申込書にサインしてくれた。`);renderVisit();};
+     } else {
+       V.interest-=15;
+       if(V.interest<15){s.refused=true;s.carry=Math.max(0,s.carry-10);V.over=true;say(who,'悪いけど、今回は見送りで。');react('shake','🙅');addLog(`${s.name}:クロージング失敗。今日は断られた`);}
+       else{say(who,'うーん…もうちょっと考えさせて。');react('look','🤔');}
+     }}
+    break;
+  }
+  V.interest=clamp(V.interest,0,V.proposed&&V.matched?100:70);
+  if(!V.over&&!V.hooked&&V.interest>=70){V.hooked=true;V.patience+=20;V.maxPat+=10;V.line+=' …ちょっと、もう少し聞かせてよ。';}
+  if(!V.over&&V.patience<=0){V.patience=0;V.line+=' …ごめん、そろそろ戻らなきゃ。';react('watch','⌛');}
+  if(!V.over&&!V.eventDone&&V.patience>0&&V.acts>=3&&!V.objection&&Math.random()<.4){
+    V.eventDone=true;const ev=makeEvent(),prev=V.next;
+    V.next=prev?()=>{prev();V.next=()=>startEvent(ev);renderVisit();}:()=>startEvent(ev);
+  }
+  renderHUD();renderVisit();
+}
+function makeEvent(){
+  const s=V.s,c=[['phone',s.need==='予約'?3:1],['delivery',1]];if(V.freeSeats.length)c.push(['customer',V.st.k==='idle'?.6:1.5]);
+  let tot=c.reduce((a,b)=>a+b[1],0),r=Math.random()*tot;for(const[k,w]of c){if((r-=w)<=0)return {k};}return {k:'phone'};
+}
+function startEvent(ev){
+  const s=V.s,fn=fnm(s);V.phase='event';V.event=ev;V.you='';
+  if(ev.k==='phone'){V.phoneRing=6;say('',`(プルルル…カウンターの電話が鳴った。${fn}さんがちらりと電話を見る)`);ev.choices=[{label:'「どうぞ、出てください」',sub:'3分待つ',k:'yield'},{label:'そのまま話を続ける',sub:'店主の余裕が減る',k:'push'}];react('look','📞',6);}
+  else if(ev.k==='customer'){const c=person();V.sc.add(c);c.position.set(4.2,0,4.2);const seat=V.freeSeats.shift();
+    V.walkers.push({g:c,path:[[3.2,3.2],[seat[0],seat[1]+(seat[3]?.6:0)],[seat[0],seat[1]]],i:0,done:g=>{seatPerson(g,seat[0],seat[1],seat[2],seat[3]);}});
+    say('',`(ガラッと戸が開いて、お客さんが入ってきた)`);ev.choices=[{label:'「お客さん優先で」と待つ',sub:'5分',k:'yield'},{label:'そのまま話を続ける',sub:'店主の余裕が大きく減る',k:'push'}];react('look','👀',3);}
+  else{const d=person({shirt:'#2a9d8f',arm:'#2a9d8f',hair:'#1b1b1b'});V.sc.add(d);d.position.set(4.2,0,4.2);
+    const bx=new T3.Mesh(box,M('#b88a55'));bx.scale.set(.6,.4,.4);bx.position.set(0,1.15,.35);d.add(bx);d.userData.armL.rotation.x=d.userData.armR.rotation.x=-1.2;
+    V.walkers.push({g:d,path:[[2.6,1.5],[2.6,-.6],[2.6,1.5],[4.2,4.2]],i:0,done:g=>V.sc&&V.sc.remove(g)});
+    say('',`(「毎度〜!」業者さんが配達に来た。荷物が重そうだ)`);ev.choices=[{label:'荷物運びを手伝う',sub:'5分・体力-5',k:'yield'},{label:'少し待つ',sub:'3分',k:'push'}];react('look','📦',3);}
+  renderVisit();
+}
+function resolveEvent(c){
+  const s=V.s,fn=fnm(s),ev=V.event,who=`${fn}さん`;V.phase='talk';V.event=null;V.you='';
+  if(ev.k==='phone'){V.phoneRing=0;
+    if(c.k==='yield'){pass(3);s.trust=Math.min(3,s.trust+1);V.patience+=5;
+      if(s.need==='予約'){say(who,'…はい、その日は満席で…すみません。…ごめんね。ピーク中はこういう電話に出られないんだよ');if(s.depth<1){s.depth=1;s.needKnown=true;}V.interest+=6;react('sad','😓');}
+      else{say(who,'ごめんごめん、仕入れ先からだった。で、何だっけ?');react('nod','🙂');}}
+    else{V.patience-=15;say('','(鳴り続ける電話が気になって、話に集中してもらえない…)');react('look','😣');}}
+  else if(ev.k==='customer'){
+    if(c.k==='yield'){pass(5);s.trust=Math.min(3,s.trust+1);V.patience+=10;say(who,'お待たせ。気を遣わせちゃったね');react('nod','🙂');}
+    else{V.patience-=20;V.interest-=5;say(who,'ちょっとごめん、お客さん来たから!');react('look','😠');}}
+  else{
+    if(c.k==='yield'){pass(5);G.stamina=clamp(G.stamina-5,0,100);s.trust=Math.min(3,s.trust+(s.pers==='人情派'?2:1));V.interest+=s.pers==='人情派'?10:4;say(who,'助かったよ!あんた、気が利くね');react('laugh','😄');}
+    else{pass(3);say(who,'待たせたね');react('nod','🙂');}}
+  V.interest=clamp(V.interest,0,100);
+  if(V.patience<=0){V.patience=0;V.line+=' …ごめん、そろそろ戻らなきゃ。';}
+  renderHUD();renderVisit();
+}
+const dateOf=d=>`10/${4+d}(${WD[d-1]})`;
+function apoSlots(){
+  const s=V.s,res=[],base=s.type==='lunch'?14.5*60:15*60,needBoss=!!(s.boss&&!V.bossHere);
+  if(!needBoss&&G.time+60<=16.5*60){const t=Math.max(base,Math.ceil((G.time+60)/30)*30);if(t<=17*60)res.push({day:G.day,time:t});}
+  for(let d=G.day+1;d<=DAYS&&res.length<2;d++){if(s.closed===d-1)continue;if(needBoss&&!s.boss.days.includes(d-1))continue;res.push({day:d,time:base+(res.length?60:0),boss:needBoss});}
+  return res;
+}
+const apoOK=()=>!V.over&&!V.absent&&V.acts>=2&&V.interest>=35&&V.s.trust>=1&&!G.apos.some(a=>a.si===SHOPS.indexOf(V.s))&&apoSlots().length>0;
+function takeApo(sl){
+  const s=V.s,lab=`${sl.day===G.day?'今日':dateOf(sl.day)}の${fmtT(sl.time)}`;
+  G.apos.push({si:SHOPS.indexOf(s),day:sl.day,time:sl.time,boss:sl.boss});
+  pass(2);V.over=true;V.apoSet=true;V.menu=null;V.you=`次回、${sl.boss?s.boss.who.replace(/\(.+\)/,'')+'もご一緒に':''}改めて伺ってもいいですか?`;say(`${fnm(s)}さん`,`じゃあ${lab}ね。${sl.boss?`${s.boss.who.replace(/\(.+\)/,'')}にも言っとくよ`:'待ってるよ'}`);react('nod','🙂');
+  addLog(`📅 ${s.name}とアポ:${lab}`);renderHUD();renderVisit();
+}
+function leaveVisit(){
+  if(!V)return;const s=V.s;
+  if(!V.absent&&!s.won&&!s.refused){s.carry=Math.round(V.interest*.85);addLog(`${s.name}:見込み度${s.carry}で退店`);}
+  fadeTo(()=>{view.classList.remove('inVisit');$('#vui').hidden=true;disposeInterior();V=null;G.mode='play';resize();renderAll();checkEnd();});
+}
+function renderVisit(){
+  if(!V)return;const s=V.s,st=V.st;
+  const notes=[...s.obs].map(id=>hotSpec(s,id).note).join(' / ');
+  const outs=s.comps.filter(c=>c.out);
+  $('#vhead').innerHTML=`<div class="vname">${s.icon} ${s.name} <span class="tag ${st.k}">${st.label} ${st.mark}</span>${V.apo?'<span class="tag idle">アポ</span>':''}</div>
+    <div class="vsub">${V.absent?'店主は不在。アルバイトが対応':`店主:${s.owner}さん(${s.age})${s.trust>0||V.chats>0||outs.length?`・${s.pers}`:''}`}</div>
+    ${V.absent?'':`<div class="vmeters"><span>見込み度</span><span class="bar"><i style="width:${V.interest}%"></i></span><b>${Math.round(V.interest)}</b>
+    <span>店主の余裕</span><span class="bar pat${V.patience<V.maxPat*.3?' low':''}"><i style="width:${clamp(V.patience/V.maxPat*100,0,100)}%"></i></span><b>⌛</b>
+    <span>信頼</span><span class="pips">${'●'.repeat(s.trust)}${'○'.repeat(3-s.trust)}</span><b></b></div>
+    <div class="vcomps"><b>聞けた不満</b>${outs.length?outs.map(c=>`<div>${VIEW[c.view].icon} ${c.short}${c.key==='need'?` <span class="pips">${'★'.repeat(s.depth)}${'☆'.repeat(3-s.depth)}</span>`:''}</div>`).join(''):'<div class="vsub">まだ聞けていない</div>'}${outs.length&&allOut(s)?'<div class="ok">✓ 出し切った</div>':''}</div>`}
+    ${s.boss&&!V.absent?`<div class="vsub">決裁者:${s.bossKnown?`${s.boss.who}${V.bossHere?'(今日いる)':'(今日はいない)'}`:'?'}</div>`:''}
+    ${notes?`<div class="vnotes">気づいたこと:${notes}</div>`:''}`;
+  const stg=$('#vstage');
+  if(V.phase==='talk'&&V.stage>0){stg.hidden=false;stg.innerHTML=STAGES.map((n,i)=>`<span class="${i+1<V.stage?'done':i+1===V.stage?'cur':''}">${i+1<V.stage?'✓':['①','②','③','④'][i]} ${n}</span>`).join('<i>›</i>');}
+  else stg.hidden=true;
+  const yo=$('#vyou');yo.textContent=V.you?`あなた「${V.you}」`:'';yo.hidden=!V.you;
+  $('#vsp').textContent=V.speaker;
+  const ln=$('#vline');ln.classList.toggle('narr',!V.speaker||V.speaker==='観察');lastLine='';
+  const B=[];const b=(label,fn,o={})=>B.push({label,fn,...o});const menu=m=>()=>{V.menu=m;renderVisit();};
+  const back=()=>b('戻る',()=>{V.menu=null;renderVisit();});
+  const looks=()=>V.hots.filter(h=>!h.done);
+  if(V.next)b('▶ 次へ',()=>{const f=V.next;V.next=null;f();renderVisit();},{pri:true,full:true});
+  else if(V.menu==='look'){looks().forEach(h=>b(`🔍 ${h.spec.label}`,()=>observe(h),{sub:'1分'}));if(!looks().length)b('もう見るものはない',()=>{},{dis:true});back();}
+  else if(V.phase==='absent'){if(looks().length)b('🔍 店内を見る',menu('look'));
+    b('📇 メモを添えて名刺を預ける',()=>{pass(2);leaveCard(s,true,false);V.cardDone=true;leaveVisit();},{pri:true,sub:`2分・${s.pageChecked?'ページの件を書く':'用件を書く'}・折り返し期待度 ${callStars(callChance(s,true,false))}`});
+    b('📇 名刺だけ預ける',()=>{leaveCard(s,false,false);V.cardDone=true;leaveVisit();},{sub:`折り返し期待度 ${callStars(callChance(s,false,false))}`});}
+  else if(V.phase==='arrive'){
+    if(!s.met)Object.keys(GREET).forEach(k=>b(GREET[k].label,()=>vGreet(k),{sub:'声のかけ方'}));else b('声をかける',()=>vGreet(null),{pri:true});
+    if(V.act!=='read'&&V.act!=='free'&&!V.waited)b('手が空くまで待つ',vWait,{sub:'5分'});
+    if(looks().length)b('🔍 店内を見る',menu('look'));b('今日はやめておく',leaveVisit);}
+  else if(V.phase==='event')V.event.choices.forEach(c=>b(c.label,()=>resolveEvent(c),{sub:c.sub}));
+  else if(V.menu==='chat'){Object.keys(TOPICS).forEach(k=>b(TOPICS[k]+(s.topicKnown&&k===s.topic?' ★':''),()=>vAct('chat',k)));back();}
+  else if(V.menu==='prop'){Object.keys(PRODUCTS).forEach(k=>b(PRODUCTS[k].name,()=>vAct('prop',k),{sub:`${yen(amount(k,s))}/月`}));back();}
+  else if(V.menu==='apo'){apoSlots().forEach(sl=>b(`${sl.day===G.day?'今日':dateOf(sl.day)} ${fmtT(sl.time)}`,()=>takeApo(sl),{sub:sl.boss?'決裁者も同席':'店主が対応'}));back();}
+  else if(V.objection&&!V.over&&V.patience>0){
+    Object.keys(RESP).filter(k=>k!=='fixed'||s.compDis).forEach(k=>b(RESP[k].label+((s.objKnown&&OBJ[s.obj].ok===k)||(k==='fixed')?' ★':''),()=>vAct('resp',k),{sub:RESP[k].sub}));
+    b('出直す',leaveVisit);}
+  else if(V.over)b('店を出る',leaveVisit,{pri:true,full:true});
+  else{
+    const can=V.patience>0;
+    if(can){
+      if(V.stage===1){
+        b('📱 店舗ページの話から入る',()=>vAct('page'),{dis:!s.pageChecked||V.usedPage,sub:!s.pageChecked?'訪問前に店舗ページの確認が必要':V.usedPage?'話した':'事前チェックが活きる'});
+        if(s.comps.some(c=>c.out)&&!V.usedCont)b('前回の話の続きから',()=>vAct('cont'),{sub:'聞いた不満を覚えている'});
+        b('雑談する',menu('chat'));
+        if(s.obs.has('menu'))b('メニューを褒める',()=>vAct('praise'),{sub:'看板メニューの話'});
+        b('本題に入る ▶',()=>vAct('main'),{pri:true});
+      } else if(V.stage===2){
+        Object.keys(VIEW).forEach(k=>b(`${VIEW[k].icon} ${VIEW[k].label}`,()=>vAct('ask',k),{sub:V.asked[k]?'ほかにも聞く':'について聞く'}));
+        if(s.depth>=1&&s.depth<3)b(s.depth===1?'深掘り:具体的な数字':'深掘り:一番困ること',()=>vAct('more'),{sub:NEED_C[s.need].short});
+        b('提案に進む ▶',()=>vAct('toProp'),{pri:true,sub:outs.length?(allOut(s)?'不満は出し切った':''):'まだ何も聞けていない'});
+      } else if(V.stage===3){
+        b(V.proposed?'別の商材を提案する':'商材を提案する',menu('prop'),{pri:!V.proposed});
+        if(V.matched&&s.depth>=1&&!V.dataShown)b('数字で示す',()=>vAct('data'),{sub:s.depth>=2?'お店の数字で試算':'一般的な試算'});
+        if(V.proposed&&V.matched)b('クロージングへ ▶',()=>vAct('toClose'),{pri:true});
+        b('◀ もう少し聞く',()=>vAct('back'));
+      } else {
+        b('テストクロージング',()=>vAct('test'),{dis:V.tested,sub:V.tested?'確認済み':'始めるならいつ頃?'});
+        b('申込をお願いする',()=>vAct('close'),{pri:true});
+      }
+    }
+    if(apoOK())b(s.boss&&!V.bossHere?'決裁者とのアポを取る':'次回のアポを取る',menu('apo'),{sub:'日時を約束する'});
+    if(looks().length)b('🔍 店内を見る',menu('look'));
+    b(can?'出直す':'店を出る',leaveVisit);
+  }
+  const box=$('#vbtns');box.innerHTML='';
+  let kn=0;B.forEach(o=>{const el=document.createElement('button');el.className='btn'+(o.pri?' pri':'');if(o.full)el.style.gridColumn='1/-1';if(!o.dis&&kn<9)kn++;el.innerHTML=(!o.dis&&kn<=9?`<kbd>${kn}</kbd>`:'')+o.label+(o.sub?`<small>${o.sub}</small>`:'');if(o.dis)el.disabled=true;el.onclick=o.fn;box.appendChild(el);});
+  if(document.activeElement&&document.activeElement!==document.body&&!document.activeElement.isConnected)document.body.focus();
+}
+function greet(s,st){
+  let l;
+  if(!s.met||!s.greeted){s.greeted=true;l=s.intro;}
+  else if(s.ate){l='あ、この前食べに来てくれた人だよね!どうだった?';s.ate=false;}
+  else if(s.refusedBefore){l='この前断ったよね…まあ、話くらいは聞くけど';s.refusedBefore=false;}
+  else if(s.carry>=45)l='この前の話、ちょっと考えてたんだよ';
+  else if(st.k==='idle')l='ちょうど手が空いたところ。どうぞ';
+  else l='はいはい、手短にお願いね';
+  if(s.wrongProp)l+=`(${PRODUCTS[s.wrongProp].name}の話はもういいからね)`;
+  if(s.rivalToday)l+=' …そういえば、さっき別の媒体の人も来てたよ';
+  return l;
+}
+// interior click
+const ray=new T3.Raycaster(),ptr=new T3.Vector2();
+function hitHot(e){if(!V||!V.cam)return null;const r=renderer.domElement.getBoundingClientRect();ptr.set(((e.clientX-r.left)/r.width)*2-1,-((e.clientY-r.top)/r.height)*2+1);
+  ray.setFromCamera(ptr,V.cam);ray.camera=V.cam;const hit=ray.intersectObjects(V.hits,false).find(i=>i.object.userData.hot&&!i.object.userData.hot.done&&(i.object.visible));return hit?hit.object.userData.hot:null;}
+renderer.domElement.addEventListener('pointerdown',e=>{if(G.mode!=='visit'||!V||V.next||V.phase==='event')return;const h=hitHot(e);if(h)observe(h);});
+renderer.domElement.addEventListener('pointermove',e=>{if(G.mode!=='visit'||!V){renderer.domElement.style.cursor='';return;}renderer.domElement.style.cursor=hitHot(e)?'pointer':'';});
+$('#vline').addEventListener('click',()=>{if(V)V.typed=V.line.length;});
+document.querySelector('.vbox').addEventListener('click',e=>{if(!V||e.target.closest('button'))return;if(isTyping()){V.typed=V.line.length;return;}if(V.next){const b=document.querySelector('#vbtns button');if(b)b.click();}});
+
+// ================= 名刺と折り返し電話 =================
+const PHONE_OPEN={
+  人情派:'名刺置いてってくれたでしょ。わざわざ来てもらって悪かったね',
+  新しもの好き:'名刺見たよ!なにか面白い話があるんだって?',
+  職人気質:'…名刺の件。手短に頼むよ',
+  数字派:'名刺を見ました。で、具体的にどういう提案ですか?',
+  慎重派:'名刺をいただいた件ですが…どういったご用件でしょう'
+};
+function callChance(s,memo,busy){
+  let p=.22+s.trust*.12+Math.min(s.carry,60)/250+(memo?.15:0)+(memo&&s.pageChecked?.08:0);
+  p+={人情派:.1,新しもの好き:.1,慎重派:-.04,職人気質:-.1,数字派:0}[s.pers];
+  if(s.rivalToday)p-=.08;if(busy)p-=.08;
+  return clamp(p,.05,.85);
+}
+const callStars=p=>p>=.55?'★★★':p>=.35?'★★☆':'★☆☆';
+function memoText(s){const pg=s.pageChecked?pageData(s):null;return pg?`お店のページの「${pg.hook}」の件で、ご提案があります`:'ご挨拶とご提案の件で伺いました';}
+function leaveCard(s,memo,busy){
+  const si=SHOPS.indexOf(s),p=callChance(s,memo,busy);
+  s.cardLeft=true;G.calls=G.calls.filter(c=>c.si!==si);
+  if(Math.random()<p){
+    const ws=s.type==='lunch'?13.75*60:14*60,we=17*60;
+    let d=G.day,t=Math.max(G.time+rnd(30,100),ws+rnd(0,120));
+    if(t>we){d++;t=ws+rnd(0,120);}
+    while(d<=DAYS&&s.closed===d-1)d++;
+    if(d<=DAYS)G.calls.push({si,day:d,time:Math.round(t),memo,page:!!(memo&&s.pageChecked)});}
+  addLog(`📇 ${s.name}に名刺を${memo?'メモ付きで':''}預けた(折り返し期待度 ${callStars(p)})`);
+}
+function checkCalls(){
+  if(!G.calls.length)return;
+  const due=G.calls.find(c=>c.day===G.day&&c.time<=G.time);if(!due)return;
+  G.calls.splice(G.calls.indexOf(due),1);const s=SHOPS[due.si];
+  if(s.won||s.lost)return;
+  if(G.mode==='play'&&!G.paused){ringCall(due);return;}
+  G.missedCalls.push({...due,at:G.time});addLog(`📞 不在着信:${s.name}(${fnm(s)}さん)。手が離せず出られなかった`);renderHUD();
+}
+function ringCall(c){
+  buzz([220,120,220,120,220]);
+  const s=SHOPS[c.si];G.mode='call';keys.clear();clearNav();
+  card(`<div class="phone"><div class="ringIc" aria-hidden="true">📱</div><h3>着信</h3><p><b>${s.icon} ${s.name}</b><br>${s.owner}さん</p></div>
+    <div class="row"><button class="btn" id="later">あとでかけ直す</button><button class="btn pri" id="pick">出る</button></div>`);
+  $('#pick').onclick=()=>phoneTalk(c,false);
+  $('#later').onclick=()=>{G.missedCalls.push({...c,at:G.time});addLog(`📞 ${s.name}からの着信。あとでかけ直すことにした`);G.mode='play';closeCard();renderAll();};
+  $('#pick').focus();
+}
+function phoneTalk(c,fromMe){
+  const s=SHOPS[c.si],fn=fnm(s),who=`${fn}さん(電話)`;G.mode='call';pass(2);
+  const C={s,c,heard:false};
+  let open=fromMe?`あ、さっき電話した件ね。${PHONE_OPEN[s.pers].replace(/^名刺[^。]*。/,'')}`:PHONE_OPEN[s.pers];
+  if(c.page&&!fromMe){open+=`…メモにあった「${pageData(s).hook}」って話、ちょっと気になってさ`;s.needHint=true;s.carry+=6;}
+  s.carry+=5;s.trust=Math.min(3,s.trust+(s.pers==='人情派'?1:0));
+  addLog(`📞 ${s.name}の${fn}さんと電話`);
+  phoneRender(C,who,open);
+}
+function phoneRender(C,who,line,you){
+  const s=C.s;
+  const btn=(id,l,sub,pri)=>`<button class="btn${pri?' pri':''}" id="${id}">${l}${sub?`<small>${sub}</small>`:''}</button>`;
+  card(`<div class="phone sm"><div class="ringIc still" aria-hidden="true">📞</div><h3>${s.icon} ${s.name}</h3></div>
+    ${you?`<div class="vyou">あなた「${you}」</div>`:''}
+    <div class="bubble"><span class="sp">${who}</span>${line}</div>
+    <div class="row" id="prow">
+      ${btn('pApo','改めてお店に伺いたいです','訪問の日時を決める',true)}
+      ${C.heard?'':btn('pHear','少しだけ、今お話を伺えますか?','電話で不満を聞く(4分)')}
+      ${btn('pDoc','資料をお送りしておきます','すぐ電話を切る')}
+    </div>`);
+  $('#pApo').onclick=()=>phoneApo(C,who);
+  if($('#pHear'))$('#pHear').onclick=()=>{
+    $('#prow').innerHTML=Object.keys(VIEW).map(k=>btn('pv_'+k,`${VIEW[k].icon} ${VIEW[k].label}`,'について聞く')).join('');
+    Object.keys(VIEW).forEach(k=>$('#pv_'+k).onclick=()=>phoneAsk(C,who,k));};
+  $('#pDoc').onclick=()=>{s.carry+=3;pass(1);addLog(`${s.name}:資料を送ると伝えて電話を切った`);phoneEnd();};
+}
+function phoneAsk(C,who,k){
+  const s=C.s;pass(4);C.heard=true;
+  const c=s.comps.find(x=>x.view===k&&!x.out);let line;
+  if(!c)line=VIEW_NONE[k];
+  else if(c.key==='need'&&!(s.needHint||s.trust>=1||Math.random()<.4))line='まあ、電話じゃなんだから、続きは店で話すよ';
+  else{c.out=true;s.carry+=6;if(c.key==='need'){s.needKnown=true;s.depth=Math.max(s.depth,1);}if(c.comp)s.compDis=true;if(c.key==='obj')s.objKnown=true;line=c.line+' …続きは店で聞くよ';}
+  phoneRender(C,who,line,VIEW[k].q);
+}
+function phoneApo(C,who){
+  const s=C.s,base=s.type==='lunch'?14.5*60:15*60,slots=[];
+  if(G.time+60<=16.5*60&&s.closed!==G.day-1&&(!s.boss||s.boss.days.includes(G.day-1))){const t=Math.max(base,Math.ceil((G.time+60)/30)*30);if(t<=17*60)slots.push({day:G.day,time:t,boss:!!s.boss});}
+  for(let d=G.day+1;d<=DAYS&&slots.length<2;d++){if(s.closed===d-1)continue;if(s.boss&&!s.boss.days.includes(d-1))continue;slots.push({day:d,time:base+(slots.length?60:0),boss:!!s.boss});}
+  if(!slots.length){phoneRender(C,who,'今週はちょっとバタバタでさ。また来週にでも連絡してよ','改めてお店に伺いたいです');$('#pApo').disabled=true;return;}
+  const lab=sl=>`${sl.day===G.day?'今日':dateOf(sl.day)} ${fmtT(sl.time)}`;
+  card(`<div class="phone sm"><div class="ringIc still" aria-hidden="true">📞</div><h3>${s.icon} ${s.name}</h3></div>
+    <div class="vyou">あなた「改めてお店に伺いたいのですが、ご都合はいかがですか?」</div>
+    <div class="bubble"><span class="sp">${who}</span>${s.boss?`${s.boss.who.replace(/\(.+\)/,'')}もいる日なら、`:''}このへんなら空いてるよ</div>
+    <div class="row">${slots.map((sl,i)=>`<button class="btn${i?'':' pri'}" data-sl="${i}">${lab(sl)}<small>${sl.boss?'決裁者も同席':'店主が対応'}</small></button>`).join('')}</div>`);
+  cardEl.querySelectorAll('[data-sl]').forEach(b=>b.onclick=()=>{const sl=slots[+b.dataset.sl],si=SHOPS.indexOf(s);
+    G.apos=G.apos.filter(a=>a.si!==si);G.apos.push({si,day:sl.day,time:sl.time,boss:sl.boss});s.trust=Math.min(3,s.trust+1);pass(1);
+    addLog(`📅 電話で${s.name}とアポ:${lab(sl)}`);phoneEnd(`📅 ${lab(sl)} に ${s.name} へ訪問`);});
+}
+function phoneEnd(msg){G.mode='play';closeCard();if(msg)toast(msg);renderAll();checkEnd();}
+function showMissed(){
+  if(G.mode!=='play'||!G.missedCalls.length)return;G.mode='call';
+  card(`<h3>📞 不在着信</h3><p class="note">折り返すと、相手が出られる時間なら話せる。今日中に折り返さないと見込み度が下がる。</p>
+    <table class="list">${G.missedCalls.map((c,i)=>{const s=SHOPS[c.si];return `<tr><td>${s.icon} ${s.name}<br><span class="muted">${s.owner}さん・${fmtT(c.at)}</span></td><td><button class="btn sm" data-cb="${i}">折り返す</button></td></tr>`;}).join('')}</table>
+    <div class="row"><button class="btn full" id="cl">閉じる</button></div>`);
+  $('#cl').onclick=()=>{G.mode='play';closeCard();};
+  cardEl.querySelectorAll('[data-cb]').forEach(b=>b.onclick=()=>{
+    const c=G.missedCalls[+b.dataset.cb],s=SHOPS[c.si],st=status(s,G.time);pass(1);
+    if(st.k==='peak'||st.k==='holiday'||st.k==='closed'){toast(`${s.name}:呼び出し音が鳴るだけで出ない(${st.label})`);G.mode='play';closeCard();renderAll();return;}
+    G.missedCalls.splice(+b.dataset.cb,1);phoneTalk(c,true);});
+}
+
+// ================= DAY FLOW =================
+function checkEnd(){if(G.mode==='play'&&G.time>=END){G.time=END;addLog('19:00。今日はここまで');endDay();}}
+function kpiTable(k){
+  return `<table><tr><th>KPI</th><th>実績</th><th>目標</th><th></th></tr>${Object.keys(TARGET).map(key=>{
+    const ok=k[key]>=TARGET[key];const v=key==='sales'?yen(k[key]):k[key];const t=key==='sales'?yen(TARGET[key]):TARGET[key];
+    return `<tr><td>${KPI_LABEL[key]}</td><td>${v}</td><td>${t}</td><td class="${ok?'ok':'ng'}">${ok?'達成':'未達'}</td></tr>`;}).join('')}</table>`;
+}
+function endDay(){
+  G.mode='report';
+  G.missedCalls.forEach(c=>{const s=SHOPS[c.si];s.carry=Math.max(0,s.carry-5);G.news.push(`${s.name}の不在着信に折り返さなかった`);});G.missedCalls=[];
+  G.calls.forEach(c=>{if(c.day===G.day){c.day=G.day+1;c.time=Math.round(14*60+rnd(0,120));}});G.calls=G.calls.filter(c=>c.day<=DAYS);
+  Object.keys(G.total).forEach(k=>G.total[k]+=G.today[k]);
+  const hit=Object.keys(TARGET).filter(k=>G.today[k]>=TARGET[k]).length;
+  const boss=['…まず訪問数を作ろう。動かないと何も始まらない','動けてはいる。行く時間帯と順番を見直そう','半分達成。アイドルタイムを狙えばもう一段いける','惜しい!あと一つ','全KPI達成。完璧な一日だ'][hit];
+  const last=G.day>=DAYS;
+  card(`<h3>${dateStr()} 日報</h3>${kpiTable(G.today)}
+    ${G.news.length?`<p class="note">⚠ ${G.news.join('/')}</p>`:''}
+    <div class="slack"><b>上司</b>:${boss}</div>
+    <div class="row"><button class="btn pri full" id="nx">${last?'週次の評価を見る':'翌日へ'}</button></div>`);
+  $('#nx').onclick=()=>{if(last)showFinal();else{G.day++;startDay();}};
+  $('#nx').focus();renderAll();
+}
+function showMorning(){
+  G.mode='morning';
+  const hol=SHOPS.filter(s=>s.closed===G.day-1).map(s=>s.name);
+  card(`<h3>${dateStr()} 朝</h3>
+    <p>天気:<b>${G.rain?'☔ 雨(歩くのが遅い・人通り少なめ)':'☀️ 晴れ'}</b></p>
+    <p class="note">今日の定休日:${hol.length?hol.join('、'):'なし'}</p>
+    ${(()=>{const t=G.apos.filter(a=>a.day===G.day).sort((x,y)=>x.time-y.time);return t.length?`<p>📅 今日のアポ:<b>${t.map(a=>`${fmtT(a.time)} ${SHOPS[a.si].name}`).join('、')}</b></p>`:'';})()}
+    ${G.missed&&G.missed.length?`<p class="note" style="color:var(--red)">⚠ 昨日のアポをすっぽかした:${G.missed.join('、')}(信頼↓)</p>`:''}
+    <div class="slack"><b>上司からのSlack</b><br>${G.hint}</div>
+    <p class="note">今日の目標:訪問${TARGET.visit}/商談${TARGET.meet}/受注${TARGET.win}/売上${yen(TARGET.sales)}</p>
+    <div class="row"><button class="btn" id="ls">顧客リストを見る</button><button class="btn pri" id="go">外回りに出る</button></div>`);
+  saveGame();
+  $('#go').onclick=()=>{G.mode='play';closeCard();renderAll();keepAwake(true);saveGame();};
+  $('#ls').onclick=()=>showList(showMorning);
+  $('#go').focus();renderAll();
+}
+function showList(back){
+  const prev=G.mode;G.mode='list';
+  const rows=SHOPS.map(s=>{
+    const state=s.won?'<span class="tag idle">受注</span>':s.lost?'<span class="tag lost">他社</span>':s.refused?'<span class="tag peak">本日NG</span>':s.met?'商談中':s.cardLeft?'📇 名刺済':'未接触';
+    return `<tr><td>${s.icon} ${s.name}<br><span class="muted">${s.owner}さん/${s.met?s.pers:'?'}</span>${!s.won&&!s.lost&&prev==='play'?`<br><button class="btn sm" data-go="${SHOPS.indexOf(s)}" style="margin-top:3px">🧭 ここへ行く</button>`:''}</td><td>${s.pageChecked?'✓':(s.won||s.lost?'—':`<button class="btn sm" data-pg="${SHOPS.indexOf(s)}">確認</button>`)}</td><td>${areaName(s.x,s.y)}</td><td>${s.closed>=0?WD[s.closed]:'なし'}</td><td>${s.type==='lunch'?'昼中心':s.type==='dinner'?'夜のみ':'昼夜'}</td><td>${s.won?'—':s.carry}</td><td>${s.comps.filter(c=>c.out).map(c=>c.short).join('<br>')||(s.needHint?'手がかりあり':'?')}${s.comps.every(c=>c.out)?' ✓':''}</td><td>${s.topicKnown?TOPICS[s.topic]:'?'}</td><td>${(()=>{const ap=G.apos.find(a=>a.si===SHOPS.indexOf(s));return ap?`${dateOf(ap.day)} ${fmtT(ap.time)}`:'—';})()}</td><td>${state}</td></tr>`;}).join('');
+  card(`<h3>顧客リスト</h3><p class="note">訪問やSlack、スタッフの話でわかったことが埋まっていく。</p>
+    <div class="tblwrap"><table class="list"><tr><th>店舗/店主</th><th>ページ</th><th>エリア</th><th>定休</th><th>営業</th><th>見込み</th><th>聞けた不満</th><th>好きな話題</th><th>アポ</th><th>状態</th></tr>${rows}</table></div>
+    <div class="row"><button class="btn pri full" id="cl">閉じる</button></div>`);
+  cardEl.classList.add('wide');
+  cardEl.querySelectorAll('[data-go]').forEach(bt=>bt.onclick=()=>{cardEl.classList.remove('wide');G.mode='play';closeCard();const s=SHOPS[+bt.dataset.go];const it=INTER.find(i=>i.ref===s);navTo(it.tx,it.ty,it);});
+  cardEl.querySelectorAll('[data-pg]').forEach(bt=>bt.onclick=()=>checkPage(SHOPS[+bt.dataset.pg],()=>showList(back)));
+  $('#cl').onclick=()=>{cardEl.classList.remove('wide');if(back)back();else{G.mode=prev==='list'?'play':prev;closeCard();}};$('#cl').focus();
+}
+function showFinal(){
+  G.mode='final';
+  const Wk={visit:TARGET.visit*DAYS,meet:TARGET.meet*DAYS,win:TARGET.win*DAYS,sales:TARGET.sales*DAYS};
+  const rate=Object.keys(Wk).reduce((a,k)=>a+Math.min(G.total[k]/Wk[k],1.5),0)/4;
+  const rank=rate>=1.1?'S':rate>=.9?'A':rate>=.7?'B':'C';
+  const msg={S:'部長賞。来期のエース候補だ',A:'目標達成。いい一週間だった',B:'あと一歩。回る順番と時間帯を見直そう',C:'まずは訪問数から。動けば数字はついてくる'}[rank];
+  const lost=SHOPS.filter(s=>s.lost).length;
+  let best=null;try{best=JSON.parse(localStorage.getItem('kpidash3d-best')||'null');}catch(e){}
+  const isBest=!best||rate>best.rate;
+  if(isBest){try{localStorage.setItem('kpidash3d-best',JSON.stringify({rate,rank,sales:G.total.sales}));}catch(e){}}
+  const rows=Object.keys(Wk).map(k=>{const ok=G.total[k]>=Wk[k];return `<tr><td>${KPI_LABEL[k]}</td><td>${k==='sales'?yen(G.total[k]):G.total[k]}</td><td>${k==='sales'?yen(Wk[k]):Wk[k]}</td><td class="${ok?'ok':'ng'}">${ok?'達成':'未達'}</td></tr>`;}).join('');
+  card(`<h3>週次評価</h3><div class="rank">${rank}</div><p>達成率 ${Math.round(rate*100)}%(各KPI上限150%で平均)</p>
+    <table><tr><th>KPI</th><th>実績</th><th>週目標</th><th></th></tr>${rows}</table>
+    ${lost?`<p class="note">他媒体に取られた店:${lost}軒</p>`:''}
+    <div class="slack"><b>部長</b>:${msg}</div>
+    <p class="note">${isBest?'自己ベスト更新!':`自己ベスト:${best.rank}(${Math.round(best.rate*100)}%)`}</p>
+    <div class="row"><button class="btn pri full" id="re">もう一週やる</button></div>`);
+  clearSave();keepAwake(false);
+  $('#re').onclick=()=>{newGame();startDay();};$('#re').focus();
+}
+function showTitle(){
+  card(`<h3>KPIダッシュ!街まわり営業</h3>
+    <p>担当エリアは「ひなた駅」周辺。月曜から金曜の5日間で、飲食店を回ってKPIを積み上げよう。</p>
+    <ul class="rules">
+      <li><b>時間は流れ続ける</b>(1秒=2分)。9:00〜19:00、商談は1手10分</li>
+      <li><b>時間帯</b>:ランチ・ディナーのピーク中は門前払い。14〜17時のアイドルタイムが狙い目。夜営業の店は午前中、店主がまだ来ていない</li>
+      <li><b>人を見る</b>:店主ごとに性格と好きな話題がある。店内の様子、スタッフの話、朝のSlackがヒント</li>
+      <li><b>訪問</b>:店に入ったら、まず🔍で店内を観察。声のかけ方は店主の性格に合わせる。店主の「余裕」が尽きる前に話を進める</li>
+      <li><b>事前準備</b>:訪問前に📱店舗ページを確認(近くの店・顧客リストから)。気になる点が、そのまま話の入口になる</li>
+      <li><b>商談の流れ</b>:①つかみ → ②不満を聞く(スタッフ・販促・お客さんの3視点)→ ③提案 → ④クロージング。<b>不満を出し切ってから提案</b>するほど刺さる。決裁者がいない日は決まらないので、決裁者とのアポを取る</li>
+      <li><b>決裁者</b>:店長に決める権限がない店もある。決裁者が来る曜日を狙う</li>
+      <li><b>名刺</b>:店主が不在・ピーク中なら名刺を預けられる。信頼や見込み度が高いほど、メモを添えるほど、折り返しの電話が来やすい。電話からアポも取れる</li>
+      <li><b>街</b>:他媒体の営業(赤い札)も回っている。見込みの薄い店は取られることがある</li>
+      <li><b>操作</b>:行きたい場所や店をタップ(クリック)すると自動で歩いて入店まで行く。MAPを拡大して行き先をタップしても同じ。画面をドラッグするとその場でスティック操作。⏸で一時停止</li>
+      <li>☕カフェ・🏪コンビニで回復、🏢営業所で日報を出して退勤</li>
+    </ul>
+    <p class="note">街・店名・人物・価格はすべて架空です。</p>
+    <div class="row"><button class="btn pri full" id="go">出社する</button></div>`);
+  {const sv=savedInfo();const row=cardEl.querySelector('.row');
+   {const ul=cardEl.querySelector('.rules'),d=document.createElement('details');d.className='howto';d.open=!sv&&!COARSE;d.innerHTML='<summary>遊び方</summary>';ul.parentNode.insertBefore(d,ul);d.appendChild(ul);d.parentNode.insertBefore(row,d);}
+   if(sv){row.innerHTML=`<button class="btn" id="newBtn">はじめから<small>セーブは上書きされる</small></button><button class="btn pri" id="contBtn">▶ 続きから<small>10/${4+sv.G.day}(${WD[sv.G.day-1]}) ${fmtT(sv.G.time)}・受注${sv.G.total.win+sv.G.today.win}件</small></button>`;
+     $('#contBtn').onclick=resumeGame;$('#newBtn').onclick=()=>{clearSave();startDay();};$('#contBtn').focus();}
+   else{$('#go').onclick=startDay;$('#go').focus();}
+   row.insertAdjacentHTML('afterend',`<div style="margin-top:10px">${installHTML()}</div>`);bindInstall();}
+}
+
+// ================= UI =================
+const ov=$('#ov'),cardEl=$('#card');
+function card(html){cardEl.classList.remove('wide');cardEl.innerHTML=html;ov.hidden=false;keys.clear();}
+function closeCard(){ov.hidden=true;cardEl.innerHTML='';}
+let tt;function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(tt);tt=setTimeout(()=>t.classList.remove('show'),2600);addLog(m);}
+let lastClock='';
+function renderHUD(){
+  $('#date').textContent=dateStr();
+  $('#weather').textContent=G.rain?'☔ 雨':'☀️ 晴れ';
+  {const t=G.apos.filter(a=>a.day===G.day).sort((x,y)=>x.time-y.time)[0];$('#apo').textContent=t?`📅 ${fmtT(t.time)} ${SHOPS[t.si].name.split(' ').pop()}`:'';}
+  {const t=G.today;$('#sheetKpi').textContent=`訪${t.visit}/${TARGET.visit} 商${t.meet}/${TARGET.meet} 受${t.win}/${TARGET.win}`;}
+  {const cc=$('#callChip');cc.hidden=!G.missedCalls.length;cc.textContent=`📞 不在着信 ${G.missedCalls.length}`;}
+  $('#kpis').innerHTML=Object.keys(TARGET).map(k=>{const v=G.today[k],t=TARGET[k];
+    return `<div class="kpi ${v>=t?'done':''}"><span>${KPI_LABEL[k]}</span><span class="bar"><i style="width:${clamp(v/t*100,0,100)}%"></i></span><span>${k==='sales'?yen(v):v+'/'+t}</span></div>`;}).join('');
+  renderNear();
+}
+function renderTick(){
+  const c=fmtT(Math.min(G.time,END));if(c!==lastClock){lastClock=c;$('#clock').textContent=c;}
+  const sb=$('#stambar');sb.firstElementChild.style.width=G.stamina+'%';sb.classList.toggle('low',G.stamina<20);
+}
+function setNear(html,s){const el=$('#near');if(el._h===html)return;el._h=html;el.innerHTML=html;const b=$('#pgBtn');if(b&&s)b.onclick=()=>{if(G.mode==='play')checkPage(s);};}
+function renderNear(){
+  const a=NEAR,el=$('#near');
+  const rp=rival.visible?rival.position:null;
+  const rivalNear=rp&&Math.hypot(rp.x-G.x,rp.z-G.z)<3?'<p class="note">他媒体の営業とすれ違った。軽く会釈された。</p>':'';
+  if(!a){setNear(`<h2>周辺</h2><p class="muted">お店の入口に近づくと、ここに店舗情報が出ます。</p>${rivalNear}`);return;}
+  const simple={cafe:[`☕ ${a.ref.name}`,'入ると20分休んで体力+40'],conv:['🏪 コンビニ','入ると5分で体力+15'],office:['🏢 営業所','入ると日報を書いて退勤できる'],
+    shrine:['⛩️ ひなた神社',G.pray?'今日はお参り済み':'お参りするとクロージングが少し決まりやすくなる(1日1回)'],station:['🚉 ひなた駅','朝は通勤客、昼は買い物客で人通りが多い']};
+  if(simple[a.kind]){setNear(`<h2>周辺</h2><div class="nm">${simple[a.kind][0]}</div><p class="muted">${simple[a.kind][1]}</p>${rivalNear}`);return;}
+  const s=a.ref,st=status(s,G.time);
+  setNear(`<h2>周辺</h2><div class="nm">${s.icon} ${s.name}</div>
+    <div class="muted">${s.genre}/${s.seats}席/定休:${s.closed>=0?WD[s.closed]+'曜':'なし'}</div>
+    <div class="muted">店主:${s.owner}さん(${s.age})${s.met?`/${s.pers}`:''}</div>
+    <div><span class="tag ${st.k==='won'?'idle':st.k}">${st.label} ${st.mark}</span>${s.refused?'<span class="tag peak">本日お断り</span>':''}${s.rivalToday&&!s.won&&!s.lost?'<span class="tag peak">他社訪問あり</span>':''}</div>
+    ${(()=>{const ap=G.apos.find(a=>a.si===SHOPS.indexOf(s));return ap?`<div><span class="tag idle">📅 ${ap.day===G.day?'今日':dateOf(ap.day)} ${fmtT(ap.time)} アポ</span></div>`:'';})()}
+    ${s.cardLeft&&!s.met&&!s.won?'<div class="muted">📇 名刺を預けてある(折り返し待ち)</div>':''}
+    ${s.won||s.lost?'':s.pageChecked?'<div class="muted">📱 店舗ページ確認済み</div>':'<button class="btn sm" id="pgBtn" style="margin:4px 0">📱 店舗ページを確認(3分)</button>'}
+    ${s.won||s.lost?'':`<div class="muted">見込み度 ${s.carry}/課題 ${s.needKnown?PRODUCTS[s.need].issue:'?'}/話題 ${s.topicKnown?TOPICS[s.topic]:'?'}</div>`}${rivalNear}`,s);
+}
+function renderLog(){$('#log').innerHTML=G.log.slice(0,14).map(l=>`<li><time>${fmtT(l.t)}</time>${l.text}</li>`).join('');}
+function renderAll(){renderHUD();renderLog();renderTick();}
+$('#callChip').onclick=()=>showMissed();
+$('#setBtn').onclick=showSettings;
+$('#sheetBtn').onclick=()=>toggleSheet();$('#sheetClose').onclick=()=>toggleSheet(false);$('#sheetBack').onclick=()=>toggleSheet(false);
+$('#listBtn').onclick=()=>{if(G.mode==='play'){toggleSheet(false);showList();}};
+
+// ================= APP: 画質・セーブ・スリープ防止・インストール =================
+const LS={get:(k,d)=>{try{const v=localStorage.getItem(k);return v===null?d:JSON.parse(v);}catch(e){return d;}},set:(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}},del:k=>{try{localStorage.removeItem(k);}catch(e){}}};
+const COARSE=matchMedia('(pointer:coarse)').matches;
+const QUAL={high:{label:'高画質',dpr:2,shadow:true,ped:1,fps:60,mini:20},std:{label:'標準',dpr:1.5,shadow:true,ped:.85,fps:60,mini:12},saver:{label:'省電力',dpr:1,shadow:false,ped:.6,fps:30,mini:6}};
+let qMode=LS.get('kpidash3d-q','auto'),qLevel=qMode==='auto'?(COARSE?'std':'high'):qMode;
+let vibOn=LS.get('kpidash3d-vib',true);
+function applyQuality(){
+  const q=QUAL[qLevel];renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,q.dpr));
+  if(renderer.shadowMap.enabled!==q.shadow){renderer.shadowMap.enabled=q.shadow;sun.castShadow=q.shadow;scene.traverse(o=>{if(o.material){(Array.isArray(o.material)?o.material:[o.material]).forEach(m=>m.needsUpdate=true);}});}
+  resize();
+}
+const perf={t0:0,n:0,lastStep:0};
+function autoQuality(now,dt){
+  if(qMode!=='auto'||G.mode!=='play'||G.paused||document.hidden)return;
+  if(!perf.t0){perf.t0=now;perf.n=0;return;}
+  perf.n++;const el=now-perf.t0;
+  if(el>4000){const fps=perf.n*1000/el;perf.t0=now;perf.n=0;
+    if(fps<38&&qLevel!=='saver'&&now-perf.lastStep>6000){qLevel=qLevel==='high'?'std':'saver';perf.lastStep=now;applyQuality();toast(`動作を軽くするため、画質を「${QUAL[qLevel].label}」にしました`);}}
+}
+const buzz=p=>{if(vibOn&&navigator.vibrate)try{navigator.vibrate(p);}catch(e){}};
+let wakeLock=null;
+async function keepAwake(on){try{if(on&&!wakeLock&&'wakeLock' in navigator&&!document.hidden){wakeLock=await navigator.wakeLock.request('screen');wakeLock.addEventListener('release',()=>{wakeLock=null;});}else if(!on&&wakeLock){const w=wakeLock;wakeLock=null;await w.release();}}catch(e){}}
+// ---- save / load ----
+const SAVE_KEY='kpidash3d-save-v1';
+const SHOP_FIELDS=['won','lost','carry','trust','needKnown','refused','refusedBefore','met','topicKnown','bossKnown','objCleared','ate','wrongProp','rivalToday','depth','needHint','objKnown','num','greeted','pageChecked','page','compDis','comps','cardLeft'];
+let lastSave=0;
+function saveGame(){
+  if(!G||!['play','morning'].includes(G.mode))return;
+  const g={};['day','time','stamina','x','z','rain','today','total','hint','ate','pray','news','apos','calls','missedCalls','missed'].forEach(k=>g[k]=G[k]);g.log=G.log.slice(0,20);g.mode=G.mode;
+  const r=R?{tx:R.tx,ty:R.ty,ptx:R.ptx,pty:R.pty,prog:R.prog,path:R.path,busy:R.busy,ti:R.target?SHOPS.indexOf(R.target):-1}:null;
+  LS.set(SAVE_KEY,{v:1,at:Date.now(),G:g,R:r,shops:SHOPS.map(s=>{const o={};SHOP_FIELDS.forEach(k=>o[k]=s[k]);o.obs=[...s.obs];return o;})});
+  lastSave=G.time;
+}
+function savedInfo(){const d=LS.get(SAVE_KEY,null);return d&&d.v===1?d:null;}
+function loadGame(){
+  const d=savedInfo();if(!d)return false;
+  newGame();Object.assign(G,d.G);G.mode='play';G.paused=false;
+  if(d.R){R=Object.assign({},d.R,{target:d.R.ti>=0?SHOPS[d.R.ti]:null});delete R.ti;}
+  d.shops.forEach((o,i)=>{Object.assign(SHOPS[i],o);SHOPS[i].obs=new Set(o.obs||[]);SHOPS[i].signKey='';});
+  return d.G.mode||'play';
+}
+function resumeGame(){
+  const m=loadGame();if(!m)return;
+  setRain(G.rain);clearNav();peds.splice(0).forEach(p=>scene.remove(p.g));for(let i=0;i<14;i++)spawnPed(false);peds.forEach(p=>{p.grow=1;p.g.scale.setScalar(1);});
+  G.areaName='';refreshSigns();updateCutaway(1);updateCamera(0,true);
+  if(m==='morning'){showMorning();return;}
+  closeCard();renderAll();keepAwake(true);toast(`${dateStr()} ${fmtT(G.time)} から再開`);
+}
+const clearSave=()=>LS.del(SAVE_KEY);
+document.addEventListener('visibilitychange',()=>{
+  if(document.hidden){saveGame();if(G.mode==='play'&&!G.paused)togglePause(true);}
+  else if(G.mode==='play'&&!G.paused)keepAwake(true);
+});
+addEventListener('pagehide',saveGame);
+// ---- install ----
+let deferredInstall=null;
+addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredInstall=e;});
+const STANDALONE=matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
+const IOS=/iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+function installHTML(){
+  if(STANDALONE)return '<p class="note">✓ アプリとして起動中</p>';
+  if(deferredInstall)return '<button class="btn" id="instBtn">📲 ホーム画面にアプリとして追加</button>';
+  if(IOS)return '<p class="note">📲 アプリとして使うには、Safariの共有ボタン →「ホーム画面に追加」</p>';
+  return '<p class="note">📲 ブラウザのメニューから「ホーム画面に追加」でアプリとして使えます</p>';
+}
+function bindInstall(){const b=$('#instBtn');if(b)b.onclick=async()=>{try{deferredInstall.prompt();await deferredInstall.userChoice;}catch(e){}deferredInstall=null;b.remove();};}
+// ---- settings ----
+function showSettings(){
+  if(!['play','morning'].includes(G.mode))return;
+  const prev=G.mode;if(prev==='play')togglePause(true);G.mode='settings';
+  const opt=(k,l,sub)=>`<button class="btn${qMode===k?' pri':''}" data-q="${k}">${l}<small>${sub}</small></button>`;
+  card(`<h3>⚙ 設定</h3>
+    <p class="note">画質(いま:${QUAL[qLevel].label})</p>
+    <div class="row" style="margin-top:4px">${opt('auto','自動','重いと自動で下げる')}${opt('high','高画質','影あり・高解像度')}${opt('std','標準','バランス')}${opt('saver','省電力','影なし・30fps')}</div>
+    <div class="row"><button class="btn" id="vibBtn">振動:${vibOn?'オン':'オフ'}<small>着信・受注で振動(Android)</small></button><button class="btn" id="delBtn">セーブデータを消す<small>最初からやり直す</small></button></div>
+    <div style="margin-top:12px">${installHTML()}</div>
+    <div class="row"><button class="btn pri full" id="cl">閉じる</button></div>`);
+  bindInstall();
+  cardEl.querySelectorAll('[data-q]').forEach(b=>b.onclick=()=>{qMode=b.dataset.q;LS.set('kpidash3d-q',qMode);qLevel=qMode==='auto'?(COARSE?'std':'high'):qMode;perf.t0=0;applyQuality();G.mode=prev;showSettings();});
+  $('#vibBtn').onclick=()=>{vibOn=!vibOn;LS.set('kpidash3d-vib',vibOn);buzz(40);G.mode=prev;showSettings();};
+  $('#delBtn').onclick=()=>{if(confirm('セーブデータを消して、タイトルに戻りますか?')){clearSave();location.reload();}};
+  $('#cl').onclick=()=>{G.mode=prev;if(prev==='morning')showMorning();else closeCard();};
+}
+// ---- mobile sheet ----
+function toggleSheet(force){const sd=$('.side'),open=force!==undefined?force:!sd.classList.contains('open');sd.classList.toggle('open',open);$('#sheetBack').hidden=!open;}
+// ---- service worker (GitHub Pages) ----
+try{if('serviceWorker' in navigator&&location.protocol==='https:'&&/github\.io$/.test(location.hostname))navigator.serviceWorker.register('./sw.js').catch(()=>{});}catch(e){}
+
+// ================= MAIN LOOP =================
+let last=performance.now(),nearKey='',slowT=0;
+let lastRender=0,lastMini=0;
+function frame(now){
+  const q=QUAL[qLevel];
+  if(q.fps<60&&now-lastRender<1000/q.fps-3){requestAnimationFrame(frame);return;}
+  lastRender=now;
+  const dt=Math.min(.05,(now-last)/1000);last=now;
+  autoQuality(now,dt);
+  if(G.mode==='play'&&G.time-lastSave>=10)saveGame();
+  if(G.mode==='play'&&!G.paused){const gm=dt*TIME_SCALE;G.time+=gm;rivalAdvance(gm);}
+  updatePlayer(dt);if(!G.paused){updatePeds(dt);updateCrowds(dt);updateCars(dt);updateTrain(dt);updateRain(dt);}
+  // rival visual
+  const rp=rivalPos(),vis=!!rp&&G.time>=600&&G.time<=18.5*60&&R.busy<=0;
+  rival.visible=vis;rTag.visible=vis;
+  if(vis){const moving=R.path.length>0;rival.position.set(rp.x+.9,0,rp.z+.9);if(moving){turnTo(rival,Math.atan2(rp.dx,rp.dz),dt);animWalk(rival,dt,3);}else animIdle(rival,dt,false);
+    rival.userData.umb.visible=G.rain;rTag.position.set(rival.position.x,2.75,rival.position.z);}
+  waterTex.offset.y-=dt*.08;
+  fw.scale.setScalar(1+Math.sin(now/400)*.03);
+  // near
+  NEAR=G.mode==='play'?findNear():null;
+  const nk=NEAR?NEAR.kind+NEAR.tx+','+NEAR.ty:'';
+  if(nk!==nearKey){nearKey=nk;renderNear();const b=$('#actBtn');
+    {const q=$('#pgQuick'),sh=NEAR&&NEAR.kind==='shop'&&!NEAR.ref.pageChecked&&!NEAR.ref.won&&!NEAR.ref.lost;q.hidden=!sh;if(sh)q.onclick=()=>{if(G.mode==='play'){const s=NEAR.ref;checkPage(s,()=>{G.mode='play';closeCard();nearKey='';});}};}
+    if(NEAR){b.hidden=false;b.textContent=`${NEAR.ref.icon} ${NEAR.ref.name}に入る`+(matchMedia('(pointer:coarse)').matches?'':' [E]');doorRing.visible=true;doorRing.position.set(NEAR.px,.08,NEAR.pz);}
+    else{b.hidden=true;doorRing.visible=false;}}
+  if(doorRing.visible)doorRing.scale.setScalar(1+Math.sin(now/250)*.08);
+  slowT-=dt;if(slowT<=0){slowT=.5;refreshSigns();if(NEAR)renderNear();}
+  updateCutaway(dt);updateSky();updateCamera(dt);renderTick();
+  if(!G.paused&&G.mode!=='title'&&G.mode!=='report'&&G.mode!=='final'&&G.mode!=='morning')checkCalls();
+  if(G.mode==='play')checkEnd();
+  if(G.mode==='visit'&&V&&V.sc){updateInterior(dt,now);renderer.render(V.sc,V.cam);}
+  else{if(miniBig||now-lastMini>1000/q.mini){lastMini=now;drawMini();}renderer.render(scene,camera);}
+  requestAnimationFrame(frame);
+}
+
+newGame();applyQuality();
+for(let i=0;i<22;i++)spawnPed(false);
+peds.forEach(p=>{p.grow=1;p.g.scale.setScalar(1);});
+refreshSigns();updateCutaway(1);updateCamera(0,true);renderAll();showTitle();
+requestAnimationFrame(frame);
+if(document.fonts)document.fonts.ready.then(()=>{SHOPS.forEach(s=>s.signKey='');refreshSigns();buildMiniBase();});
+})();
+</script>
+</body>
+</html>
