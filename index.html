@@ -169,6 +169,7 @@ td.ng{color:var(--red);font-weight:700}
 #view.inVisit #pgQuick{display:none!important}
 #view.mapOpen .zoom,#view.mapOpen #sheetBtn,#view.mapOpen #pgQuick,#view.mapOpen #actBtn{display:none!important}
 #mini.big{z-index:4}
+.savetip{border:1.5px solid var(--orange);background:var(--orange-soft);border-radius:6px;padding:6px 10px;font-size:.84rem;line-height:1.5}
 .howto{margin-top:12px;border-top:1px dashed var(--grid);padding-top:8px}.howto summary{cursor:pointer;font-weight:700;color:var(--ink-soft)}
 #navChip{position:absolute;left:10px;bottom:40px;display:flex;align-items:center;gap:8px;background:#fff;color:#1d2a4a;border:2px solid #1d2a4a;border-radius:6px;padding:4px 6px 4px 10px;font-size:.85rem;font-weight:700;box-shadow:3px 3px 0 #1d2a4a;z-index:3}
 #navChip[hidden]{display:none}
@@ -2064,10 +2065,10 @@ addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredInstall=e;
 const STANDALONE=matchMedia('(display-mode: standalone)').matches||navigator.standalone===true;
 const IOS=/iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
 function installHTML(){
-  if(STANDALONE)return '<p class="note">✓ アプリとして起動中</p>';
-  if(deferredInstall)return '<button class="btn" id="instBtn">📲 ホーム画面にアプリとして追加</button>';
-  if(IOS)return '<p class="note">📲 アプリとして使うには、Safariの共有ボタン →「ホーム画面に追加」</p>';
-  return '<p class="note">📲 ブラウザのメニューから「ホーム画面に追加」でアプリとして使えます</p>';
+  if(STANDALONE)return '<p class="note">✓ アプリとして起動中(セーブデータが消えにくい状態です)</p>';
+  if(IOS)return '<div class="savetip">💾 <b>セーブを残すなら「ホーム画面に追加」がおすすめ</b><br>Safariで開いたままだと、しばらく(7日ほど)開かないとセーブが消えることがあります。共有ボタン →「ホーム画面に追加」→ ホーム画面のアイコンから開くと消えにくくなります。</div>';
+  if(deferredInstall)return '<button class="btn" id="instBtn">📲 ホーム画面にアプリとして追加<small>セーブデータも消えにくくなる</small></button>';
+  return '<p class="note">📲 ブラウザのメニューから「ホーム画面に追加」でアプリとして使えます(セーブデータも消えにくくなります)</p>';
 }
 function bindInstall(){const b=$('#instBtn');if(b)b.onclick=async()=>{try{deferredInstall.prompt();await deferredInstall.userChoice;}catch(e){}deferredInstall=null;b.remove();};}
 // ---- settings ----
