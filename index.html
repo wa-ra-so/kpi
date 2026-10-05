@@ -167,6 +167,8 @@ td.ng{color:var(--red);font-weight:700}
 #pgQuick{position:absolute;left:50%;bottom:74px;transform:translateX(-50%);font-size:.85rem;padding:5px 10px}
 @media (pointer:coarse){#pgQuick{left:auto;right:18px;transform:none;bottom:76px}}
 #view.inVisit #pgQuick{display:none!important}
+#view.mapOpen .zoom,#view.mapOpen #sheetBtn,#view.mapOpen #pgQuick,#view.mapOpen #actBtn{display:none!important}
+#mini.big{z-index:4}
 .howto{margin-top:12px;border-top:1px dashed var(--grid);padding-top:8px}.howto summary{cursor:pointer;font-weight:700;color:var(--ink-soft)}
 #navChip{position:absolute;left:10px;bottom:40px;display:flex;align-items:center;gap:8px;background:#fff;color:#1d2a4a;border:2px solid #1d2a4a;border-radius:6px;padding:4px 6px 4px 10px;font-size:.85rem;font-weight:700;box-shadow:3px 3px 0 #1d2a4a;z-index:3}
 #navChip[hidden]{display:none}
@@ -932,14 +934,34 @@ function buildMiniBase(){
   SPOTS.forEach(p=>x.fillText(p.icon,p.x*s+s/2,p.y*s+s/2));x.fillText('⛩️',23.5*s,16*s);
   miniBase=c;
 }
-let miniBig=false;
+let miniBig=false,miniSel=null,miniHover=null;
+function setMiniBig(on){miniBig=on;mini.classList.toggle('big',on);view.classList.toggle('mapOpen',on);miniSel=miniHover=null;mini.style.cursor='';}
+// 拡大マップ上の位置から、いちばん近い店・施設を拾う
+function miniPick(e){
+  const r=mini.getBoundingClientRect(),fx=(e.clientX-r.left)/r.width*COLS,fy=(e.clientY-r.top)/r.height*ROWS;
+  let it=null,bd=1.25;INTER.forEach(i=>{const d=Math.hypot(i.tx+.5-fx,i.ty+.5-fy)-(i.kind==='shop'?.15:0);if(d<bd){bd=d;it=i;}});
+  return {it,tx:Math.floor(fx),ty:Math.floor(fy)};
+}
+// 1回目のタップで店名を表示、同じ店をもう一度タップで移動
 mini.addEventListener('click',e=>{
-  if(!miniBig||G.mode!=='play'){miniBig=!miniBig;mini.classList.toggle('big',miniBig);return;}
-  const r=mini.getBoundingClientRect(),tx=Math.floor((e.clientX-r.left)/r.width*COLS),ty=Math.floor((e.clientY-r.top)/r.height*ROWS);
-  let it=INTER.find(i=>i.tx===tx&&i.ty===ty)||INTER.filter(i=>Math.abs(i.tx-tx)+Math.abs(i.ty-ty)===1).sort((a,b)=>(a.kind==='shop'?0:1)-(b.kind==='shop'?0:1))[0];
-  if(it)navTo(it.tx,it.ty,it);else if(isWalk(tx,ty))navTo(tx,ty,null);
-  miniBig=false;mini.classList.remove('big');
+  if(!miniBig||G.mode!=='play'){setMiniBig(!miniBig);return;}
+  const {it,tx,ty}=miniPick(e);
+  if(it){if(miniSel===it){navTo(it.tx,it.ty,it);setMiniBig(false);}else{miniSel=it;buzz(12);}return;}
+  if(isWalk(tx,ty)){navTo(tx,ty,null);setMiniBig(false);return;}
+  setMiniBig(false);
 });
+mini.addEventListener('pointermove',e=>{if(!miniBig||e.pointerType==='touch')return;miniHover=miniPick(e).it;mini.style.cursor=miniHover?'pointer':'';});
+mini.addEventListener('pointerleave',()=>{miniHover=null;});
+const shortName=n=>n.split(' ').pop();
+function miniInfo(it){
+  if(it.kind!=='shop'){const sub={cafe:'休憩 体力+40/20分',conv:'体力+15/5分',office:'日報を書いて退勤',shrine:'1日1回お参り',station:'人通りが多い'}[it.kind]||'';return [`${it.ref.icon} ${it.ref.name}`,sub];}
+  const s=it.ref,st=status(s,G.time),ap=G.apos.find(a=>a.si===SHOPS.indexOf(s));
+  const bits=[`${st.label}${st.mark?' '+st.mark:''}`,`${s.genre}/${s.seats}席`];
+  if(ap)bits.push(`📅 ${ap.day===G.day?'今日':dateOf(ap.day)} ${fmtT(ap.time)} アポ`);
+  if(s.refused)bits.push('本日お断り');
+  if(!s.won&&!s.lost&&s.carry>0)bits.push(`見込み ${s.carry}`);
+  return [`${s.icon} ${s.name}`,bits.join('・')];
+}
 function drawMini(){
   if(!miniBase)buildMiniBase();
   const s=20;mctx.drawImage(miniBase,0,0);
@@ -956,7 +978,23 @@ function drawMini(){
   const px=G.x/TS*s,py=G.z/TS*s;mctx.save();mctx.translate(px,py);mctx.rotate(-player.rotation.y+Math.PI);
   mctx.beginPath();mctx.moveTo(0,-11);mctx.lineTo(8,8);mctx.lineTo(0,4);mctx.lineTo(-8,8);mctx.closePath();mctx.fillStyle='#f09000';mctx.fill();mctx.strokeStyle='#1d2a4a';mctx.lineWidth=2;mctx.stroke();mctx.restore();
   if(NAV){mctx.strokeStyle='#f09000';mctx.lineWidth=3;mctx.setLineDash([6,4]);mctx.beginPath();mctx.moveTo(px,py);for(let i=NAV.i;i<NAV.pts.length;i++)mctx.lineTo(NAV.pts[i][0]/TS*s,NAV.pts[i][1]/TS*s);mctx.stroke();mctx.setLineDash([]);}
-  if(miniBig){mctx.fillStyle='rgba(29,42,74,.85)';mctx.fillRect(0,372,560,28);mctx.fillStyle='#fff';mctx.font=`700 15px ${JP_FONT}`;mctx.textAlign='center';mctx.textBaseline='middle';mctx.fillText('行き先をタップすると自動で歩きます(店をタップすると入店まで)',280,386);}
+  if(miniBig){
+    // 店名ラベル(拡大時のみ)。スマホでも読めるよう、表示サイズに合わせて文字を拡大
+    const k=clamp(560/Math.max(1,mini.clientWidth),1,1.8),f=v=>Math.round(v*k);
+    mctx.textAlign='center';mctx.textBaseline='middle';mctx.lineJoin='round';
+    SHOPS.forEach(sh=>{const X=sh.x*s+s/2,Y=sh.y*s+s/2,on=miniSel&&miniSel.ref===sh||miniHover&&miniHover.ref===sh;
+      mctx.font=`${f(13)}px ${EMOJI_FONT}`;mctx.fillText(sh.icon,X,Y+1);
+      mctx.font=`${on?900:700} ${f(on?14:11)}px ${JP_FONT}`;mctx.lineWidth=3.5*k;mctx.strokeStyle='rgba(255,255,255,.92)';const n=shortName(sh.name);
+      mctx.strokeText(n,X,Y+8+f(9));mctx.fillStyle=on?'#b56d00':'#1d2a4a';mctx.fillText(n,X,Y+8+f(9));});
+    [miniHover,miniSel].forEach((it,i)=>{if(!it)return;const X=it.tx*s+s/2,Y=it.ty*s+s/2;mctx.beginPath();mctx.arc(X,Y,i?14:12,0,Math.PI*2);mctx.strokeStyle=i?'#f09000':'rgba(240,144,0,.6)';mctx.lineWidth=i?4:2.5;mctx.stroke();});
+    const it=miniSel||miniHover;
+    if(it){const [t1,t2]=miniInfo(it),bh=f(52),by=it.ty>=11?0:400-bh,bw=f(130);mctx.fillStyle='rgba(29,42,74,.92)';mctx.fillRect(0,by,560,bh);
+      const tw=miniSel?560-bw-30:540;
+      mctx.fillStyle='#fff';mctx.textAlign='left';fitText(mctx,t1,tw,f(18));mctx.fillText(t1,12,by+bh*.3);
+      mctx.fillStyle='#c9d3e3';fitText(mctx,t2,tw,f(13),'700');mctx.fillText(t2,12,by+bh*.72);
+      if(miniSel){const bx=560-bw-10;mctx.fillStyle='#f09000';rrect(mctx,bx,by+bh*.15,bw,bh*.7,6);mctx.fill();mctx.fillStyle='#1d2a4a';mctx.textAlign='center';mctx.font=`900 ${f(14)}px ${JP_FONT}`;mctx.fillText('もう一度タップで',bx+bw/2,by+bh*.36);mctx.fillText('ここへ行く ▶',bx+bw/2,by+bh*.66);}}
+    else{const bh=f(28);mctx.fillStyle='rgba(29,42,74,.85)';mctx.fillRect(0,0,560,bh);mctx.fillStyle='#fff';mctx.textAlign='center';fitText(mctx,'店をタップで店名を表示 → もう一度タップでそこへ歩きます',540,f(15),'700');mctx.fillText('店をタップで店名を表示 → もう一度タップでそこへ歩きます',280,bh/2);}
+  }
   // view frame
   const vw=11*zoom*s/TS*4,vh=8*zoom*s/TS*4;mctx.strokeStyle='rgba(29,42,74,.5)';mctx.lineWidth=1.5;mctx.strokeRect(px-vw/2,py-vh*.75,vw,vh);
 }
@@ -979,7 +1017,7 @@ addEventListener('keydown',e=>{
   else if(k==='shift'){keys.add('shift');}
   else if((k==='e'||k===' '||k==='enter')&&G.mode==='play'&&NEAR&&!G.paused){e.preventDefault();interact();}
   else if((k==='p'||k==='escape')&&(G.mode==='play')){e.preventDefault();togglePause();}
-  else if(k==='m'&&G.mode==='play'){miniBig=!miniBig;mini.classList.toggle('big',miniBig);}
+  else if(k==='m'&&G.mode==='play'){setMiniBig(!miniBig);}
 });
 addEventListener('keyup',e=>keys.delete(e.key.toLowerCase()));
 addEventListener('blur',()=>keys.clear());
